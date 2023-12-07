@@ -2,20 +2,20 @@
 
 # The IP address or hostname to access admin UI and registry service.
 # DO NOT use localhost or 127.0.0.1, because Harbor needs to be accessed by external clients.
-hostname: registry.domain.com
+hostname: reg.mydomain.com
 
 # http related config
 http:
   # port for http, default is 80. If https enabled, this port will redirect to https port
-  port: 8080
+  port: 80
 
 # https related config
-#https:
+https:
   # https port for harbor, default is 443
-  #port: 8443
+  port: 443
   # The path of cert and key files for nginx
-  #certificate: /your/certificate/path
-  #private_key: /your/private/key/path
+  certificate: /your/certificate/path
+  private_key: /your/private/key/path
 
 # # Uncomment following will enable tls communication between all harbor components
 # internal_tls:
@@ -26,7 +26,7 @@ http:
 
 # Uncomment external_url if you want to enable external proxy
 # And when it enabled the hostname will no longer used
-external_url: https://registry.domain.com
+# external_url: https://reg.mydomain.com:8433
 
 # The initial password of Harbor admin
 # It only works in first time to install harbor
@@ -149,16 +149,16 @@ log:
 _version: 2.8.0
 
 # Uncomment external_database if using external database.
-external_database:
-  harbor:
-    host: db.domain.com
-    port: 5432
-    db_name: harbor
-    username: harbor
-    password: pass
-    ssl_mode: disable
-    max_idle_conns: 2
-    max_open_conns: 0
+# external_database:
+#   harbor:
+#     host: harbor_db_host
+#     port: harbor_db_port
+#     db_name: harbor_db_name
+#     username: harbor_db_username
+#     password: harbor_db_password
+#     ssl_mode: disable
+#     max_idle_conns: 2
+#     max_open_conns: 0
 #   notary_signer:
 #     host: notary_signer_db_host
 #     port: notary_signer_db_port
@@ -186,26 +186,26 @@ external_database:
 #   # cache_layer_db_index: 7
 
 # Uncomment external_redis if using external Redis server
-external_redis:
+# external_redis:
 #   # support redis, redis+sentinel
 #   # host for redis: <host_redis>:<port_redis>
 #   # host for redis+sentinel:
 #   #  <host_sentinel1>:<port_sentinel1>,<host_sentinel2>:<port_sentinel2>,<host_sentinel3>:<port_sentinel3>
-  host: db.domain.com:6379
-  password: pass
+#   host: redis:6379
+#   password: 
 #   # Redis AUTH command was extended in Redis 6, it is possible to use it in the two-arguments AUTH <username> <password> form.
 #   # username:
 #   # sentinel_master_set must be set to support redis+sentinel
 #   #sentinel_master_set:
 #   # db_index 0 is for core, it's unchangeable
-  registry_db_index: 1
-  jobservice_db_index: 2
+#   registry_db_index: 1
+#   jobservice_db_index: 2
 #   trivy_db_index: 5
-  idle_timeout_seconds: 30
+#   idle_timeout_seconds: 30
 #   # it's optional, the db for harbor business misc, by default is 0, uncomment it if you want to change it.
-  harbor_db_index: 6
+#   # harbor_db_index: 6
 #   # it's optional, the db for harbor cache layer, by default is 0, uncomment it if you want to change it.
-  cache_layer_db_index: 7
+#   # cache_layer_db_index: 7
 
 # Uncomment uaa for trusting the certificate of uaa instance that is hosted via self-signed cert.
 # uaa:
@@ -283,6 +283,6 @@ upload_purging:
 # otherwise it can lead to potential data inconsistency.
 cache:
   # not enabled by default
-  enabled: true
+  enabled: false
   # keep cache for one day by default
   expire_hours: 24

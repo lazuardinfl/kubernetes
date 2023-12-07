@@ -1,0 +1,13 @@
+# index for mdb
+dn: olcDatabase={2}mdb,cn=config
+changetype: modify
+# delete index if exist
+delete: olcDbIndex
+-
+# add index
+add: olcDbIndex
+olcDbIndex: objectClass pres,eq
+olcDbIndex: ou,cn,uid,mail pres,eq,sub
+olcDbIndex: sn,givenName,displayName pres,eq,sub
+olcDbIndex: member,memberOf pres,eq
+olcDbIndex: name,title,employeeNumber,employeeType,departmentNumber,businessCategory eq,sub

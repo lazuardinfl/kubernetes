@@ -1,0 +1,14 @@
+# add memberOf module
+dn: cn=module{0},cn=config
+changetype: modify
+add: olcModuleLoad
+olcModuleLoad: memberof.so
+
+# add memberOf policy to db
+dn: olcOverlay=memberof,olcDatabase={2}mdb,cn=config
+changetype: add
+objectClass: olcOverlayConfig
+objectClass: olcMemberOfConfig
+olcOverlay: memberof
+olcMemberOfGroupOC: groupOfURLs
+olcMemberOfRefInt: TRUE

@@ -1,0 +1,8 @@
+{
+    "cn=admin,ou=gitea,ou=groups,dc=domain,dc=com": {
+        "org": ["Admin"]
+    },
+    "cn=user,ou=gitea,ou=groups,dc=domain,dc=com": {
+        "org": ["team1", "team2"]
+    }
+}

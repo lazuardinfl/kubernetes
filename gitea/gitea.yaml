@@ -1,0 +1,289 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: gitea
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: gitea-pvc
+  namespace: gitea
+spec:
+  storageClassName: openebs-local
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 1G
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: gitea-http
+  namespace: gitea
+  labels:
+    app: gitea
+    app.kubernetes.io/name: gitea
+    app.kubernetes.io/instance: gitea
+    app.kubernetes.io/version: "1.21.1"
+    version: "1.21.1"
+spec:
+  type: ClusterIP
+  selector:
+    app.kubernetes.io/name: gitea
+    app.kubernetes.io/instance: gitea
+  ports:
+  - name: http
+    port: 3000
+    targetPort: 3000
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: gitea-ssh
+  namespace: gitea
+  labels:
+    app: gitea
+    app.kubernetes.io/name: gitea
+    app.kubernetes.io/instance: gitea
+    app.kubernetes.io/version: "1.21.1"
+    version: "1.21.1"
+spec:
+  type: ClusterIP
+  selector:
+    app.kubernetes.io/name: gitea
+    app.kubernetes.io/instance: gitea
+  ports:
+  - name: ssh
+    port: 22
+    targetPort: 2222
+    protocol: TCP
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: gitea
+  namespace: gitea
+  labels:
+    app: gitea
+    app.kubernetes.io/name: gitea
+    app.kubernetes.io/instance: gitea
+    app.kubernetes.io/version: "1.21.1"
+    version: "1.21.1"
+spec:
+  replicas: 1
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 0
+      maxSurge: 100%
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: gitea
+      app.kubernetes.io/instance: gitea
+  template:
+    metadata:
+      labels:
+        app: gitea
+        app.kubernetes.io/name: gitea
+        app.kubernetes.io/instance: gitea
+        app.kubernetes.io/version: "1.21.1"
+        version: "1.21.1"
+    spec:
+      securityContext:
+        fsGroup: 1000
+      initContainers:
+        - name: init-directories
+          image: gitea/gitea:1.21.1-rootless
+          imagePullPolicy: Always
+          command: ["/usr/sbin/init_directory_structure.sh"]
+          env:
+            - name: GITEA_APP_INI
+              value: /data/gitea/conf/app.ini
+            - name: GITEA_CUSTOM
+              value: /data/gitea
+            - name: GITEA_WORK_DIR
+              value: /data
+            - name: GITEA_TEMP
+              value: /tmp/gitea
+          volumeMounts:
+            - name: init
+              mountPath: /usr/sbin
+            - name: temp
+              mountPath: /tmp
+            - name: data
+              mountPath: /data
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+        - name: init-app-ini
+          image: gitea/gitea:1.21.1-rootless
+          imagePullPolicy: Always
+          command: ["/usr/sbin/config_environment.sh"]
+          env:
+            - name: GITEA_APP_INI
+              value: /data/gitea/conf/app.ini
+            - name: GITEA_CUSTOM
+              value: /data/gitea
+            - name: GITEA_WORK_DIR
+              value: /data
+            - name: GITEA_TEMP
+              value: /tmp/gitea
+          envFrom:
+            - secretRef:
+                name: gitea-secret
+          volumeMounts:
+            - name: config
+              mountPath: /usr/sbin
+            - name: temp
+              mountPath: /tmp
+            - name: data
+              mountPath: /data
+            - name: inline-config-sources
+              mountPath: /env-to-ini-mounts/inlines/
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+        - name: configure-gitea
+          image: gitea/gitea:1.21.1-rootless
+          command: ["/usr/sbin/configure_gitea.sh"]
+          imagePullPolicy: Always
+          securityContext:
+            runAsUser: 1000
+          env:
+            - name: GITEA_APP_INI
+              value: /data/gitea/conf/app.ini
+            - name: GITEA_CUSTOM
+              value: /data/gitea
+            - name: GITEA_WORK_DIR
+              value: /data
+            - name: GITEA_TEMP
+              value: /tmp/gitea
+            - name: HOME
+              value: /data/gitea/git
+            - name: GITEA_ADMIN_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  key:  GITEA_ADMIN_USERNAME
+                  name: gitea-secret
+            - name: GITEA_ADMIN_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  key:  GITEA_ADMIN_PASSWORD
+                  name: gitea-secret
+          volumeMounts:
+            - name: init
+              mountPath: /usr/sbin
+            - name: temp
+              mountPath: /tmp
+            - name: data
+              mountPath: /data
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+      terminationGracePeriodSeconds: 60
+      containers:
+        - name: gitea
+          image: gitea/gitea:1.21.1-rootless
+          imagePullPolicy: Always
+          env:
+            - name: SSH_LISTEN_PORT
+              value: "2222"
+            - name: SSH_PORT
+              value: "22"
+            - name: GITEA_APP_INI
+              value: /data/gitea/conf/app.ini
+            - name: GITEA_CUSTOM
+              value: /data/gitea
+            - name: GITEA_WORK_DIR
+              value: /data
+            - name: GITEA_TEMP
+              value: /tmp/gitea
+            - name: TMPDIR
+              value: /tmp/gitea
+            - name: HOME
+              value: /data/gitea/git
+          ports:
+            - name: ssh
+              containerPort: 2222
+            - name: http
+              containerPort: 3000
+          livenessProbe:
+            failureThreshold: 10
+            initialDelaySeconds: 200
+            periodSeconds: 10
+            successThreshold: 1
+            tcpSocket:
+              port: http
+            timeoutSeconds: 1
+          readinessProbe:
+            failureThreshold: 3
+            initialDelaySeconds: 5
+            periodSeconds: 10
+            successThreshold: 1
+            tcpSocket:
+              port: http
+            timeoutSeconds: 1
+          resources: {}
+          volumeMounts:
+            - name: temp
+              mountPath: /tmp
+            - name: data
+              mountPath: /data
+      volumes:
+        - name: init
+          secret:
+            secretName: gitea-init
+            defaultMode: 110
+        - name: config
+          secret:
+            secretName: gitea
+            defaultMode: 110
+        - name: inline-config-sources
+          configMap:
+            name: gitea-inline-config
+        - name: temp
+          emptyDir: {}
+        - name: data
+          persistentVolumeClaim:
+            claimName: gitea-pvc
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: gitea-ingress
+  namespace: gitea
+  labels:
+    app: gitea
+    app.kubernetes.io/name: gitea
+    app.kubernetes.io/instance: gitea
+    app.kubernetes.io/version: "1.21.1"
+    version: "1.21.1"
+  annotations:
+    cert-manager.io/cluster-issuer: "org-ca-issuer"
+    cert-manager.io/common-name: "Gitea"
+    nginx.ingress.kubernetes.io/proxy-body-size: "0"
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/ssl-prefer-server-ciphers: "false"
+    nginx.ingress.kubernetes.io/server-snippet: |
+      ssl_session_timeout 1d;
+spec:
+  ingressClassName: nginx
+  tls:
+    - hosts:
+        - gitea.domain.com
+      secretName: gitea-tls
+  rules:
+  - host: gitea.domain.com
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: gitea-http
+            port:
+              number: 3000

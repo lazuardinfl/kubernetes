@@ -1,0 +1,13 @@
+
+helm template --create-namespace -n gitea -f values.yaml gitea gitea-charts/gitea > temp1.yaml
+helm template -f values.yaml -n gitea gitea gitea-charts/gitea --output-dir template
+helm template gitea gitea-charts/gitea -n gitea -f values1.yaml > temp1.yaml
+
+server:
+LANDING_PAGE=explore
+
+service
+DISABLE_REGISTRATION=true
+
+redis://:password@redis.domain.com:6379/3?pool_size=100&idle_timeout=180s&
+

@@ -1,0 +1,18 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: argocd
+resources:
+  - argocd.yaml
+  - argocd-configs.yaml
+  - argocd-workloads.yaml
+patchesStrategicMerge:
+  - patch.yaml
+secretGenerator:
+  - name: argocd-secret
+    behavior: merge
+    env: argocd.env
+  - name: argocd-avp-secret
+    behavior: merge
+    env: avp.env
+generatorOptions:
+  disableNameSuffixHash: true

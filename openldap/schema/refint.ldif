@@ -1,0 +1,13 @@
+# add refint to module
+dn: cn=module{0},cn=config
+changetype: modify
+add: olcModuleLoad
+olcModuleLoad: refint.so
+
+# add refint policy to db
+dn: olcOverlay=refint,olcDatabase={2}mdb,cn=config
+changetype: add
+objectClass: olcOverlayConfig
+objectClass: olcRefintConfig
+olcOverlay: refint
+olcRefintAttribute: memberOf member owner manager secretary seeAlso

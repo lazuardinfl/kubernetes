@@ -1,0 +1,229 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: keycloak
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: keycloak-secret
+  namespace: keycloak
+  labels:
+    app: keycloak
+    app.kubernetes.io/instance: keycloak
+type: Opaque
+data:
+  KEYCLOAK_ADMIN: username
+  KEYCLOAK_ADMIN_PASSWORD: password
+  KC_HOSTNAME: keycloak.domain.com
+  KC_DB: db_type
+  KC_DB_URL_HOST: db_host
+  KC_DB_URL_DATABASE: db_name
+  KC_DB_URL_PORT: port
+  KC_DB_USERNAME: username
+  KC_DB_PASSWORD: password
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: keycloak
+  namespace: keycloak
+  labels:
+    app: keycloak
+    app.kubernetes.io/instance: keycloak
+spec:
+  type: ClusterIP
+  selector:
+    app: keycloak
+    app.kubernetes.io/instance: keycloak
+  ports:
+  - name: https
+    port: 8443
+    protocol: TCP
+    targetPort: 8443
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: keycloak-discovery
+  namespace: keycloak
+  labels:
+    app: keycloak
+    app.kubernetes.io/instance: keycloak
+spec:
+  type: ClusterIP
+  clusterIP: None
+  selector:
+    app: keycloak
+    app.kubernetes.io/instance: keycloak
+  ports:
+  - port: 7800
+    protocol: TCP
+    targetPort: 7800
+  publishNotReadyAddresses: true
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: keycloak
+  namespace: keycloak
+  labels:
+    app: keycloak
+    app.kubernetes.io/instance: keycloak
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: keycloak
+      app.kubernetes.io/instance: keycloak
+  serviceName: ""
+  template:
+    metadata:
+      labels:
+        app: keycloak
+        app.kubernetes.io/instance: keycloak
+    spec:
+      containers:
+      - name: keycloak
+        args:
+        - start
+        env:
+        - name: KC_FEATURES
+          value: declarative-user-profile
+        - name: KC_HTTP_PORT
+          value: "8080"
+        - name: KC_HTTPS_PORT
+          value: "8443"
+        - name: KC_HTTPS_CERTIFICATE_FILE
+          value: /mnt/certificates/tls.crt
+        - name: KC_HTTPS_CERTIFICATE_KEY_FILE
+          value: /mnt/certificates/tls.key
+        - name: KC_HEALTH_ENABLED
+          value: "true"
+        - name: KC_CACHE
+          value: ispn
+        - name: KC_CACHE_STACK
+          value: kubernetes
+        - name: KC_PROXY
+          value: reencrypt
+        - name: jgroups.dns.query
+          value: keycloak-discovery.keycloak
+        envFrom:
+        - secretRef:
+            name: keycloak-secret
+        image: quay.io/keycloak/keycloak:22.0.5
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 8443
+          name: https
+          protocol: TCP
+        - containerPort: 8080
+          name: http
+          protocol: TCP
+        livenessProbe:
+          failureThreshold: 150
+          httpGet:
+            path: /health/live
+            port: 8443
+            scheme: HTTPS
+          initialDelaySeconds: 20
+          periodSeconds: 2
+          successThreshold: 1
+          timeoutSeconds: 1
+        readinessProbe:
+          failureThreshold: 250
+          httpGet:
+            path: /health/ready
+            port: 8443
+            scheme: HTTPS
+          initialDelaySeconds: 20
+          periodSeconds: 2
+          successThreshold: 1
+          timeoutSeconds: 1
+        volumeMounts:
+        - mountPath: /mnt/certificates
+          name: keycloak-tls-certificates
+      restartPolicy: Always
+      volumes:
+      - name: keycloak-tls-certificates
+        secret:
+          defaultMode: 420
+          optional: false
+          secretName: keycloak-tls
+  updateStrategy:
+    rollingUpdate:
+      partition: 0
+    type: RollingUpdate
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: keycloak-ingress
+  namespace: keycloak
+  labels:
+    app: keycloak
+    app.kubernetes.io/instance: keycloak
+  annotations:
+    cert-manager.io/cluster-issuer: "org-ca-issuer"
+    cert-manager.io/common-name: "Keycloak"
+    nginx.ingress.kubernetes.io/proxy-body-size: "0"
+    nginx.ingress.kubernetes.io/backend-protocol: "HTTPS"
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/ssl-prefer-server-ciphers: "false"
+    nginx.ingress.kubernetes.io/server-snippet: |
+      ssl_session_timeout 1d;
+spec:
+  ingressClassName: nginx
+  tls:
+    - hosts:
+        - keycloak.domain.com
+      secretName: keycloak-tls
+  defaultBackend:
+    service:
+      name: keycloak
+      port:
+        number: 8443
+  rules:
+  - host: keycloak.domain.com
+    http:
+      paths:
+      - pathType: ImplementationSpecific 
+        backend:
+          service:
+            name: keycloak
+            port:
+              number: 8443
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: keycloak-org-ingress
+  namespace: keycloak
+  labels:
+    app: keycloak
+    app.kubernetes.io/instance: keycloak
+  annotations:
+    nginx.ingress.kubernetes.io/app-root: /realms/org/account
+    nginx.ingress.kubernetes.io/proxy-body-size: "0"
+    nginx.ingress.kubernetes.io/backend-protocol: "HTTPS"
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/ssl-prefer-server-ciphers: "false"
+    nginx.ingress.kubernetes.io/server-snippet: |
+      ssl_session_timeout 1d;
+spec:
+  ingressClassName: nginx
+  tls:
+    - hosts:
+        - keycloak.domain.com
+      secretName: keycloak-tls
+  rules:
+  - host: keycloak.domain.com
+    http:
+      paths:
+      - path: /
+        pathType: Exact
+        backend:
+          service:
+            name: keycloak
+            port:
+              number: 8443

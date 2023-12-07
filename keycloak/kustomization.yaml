@@ -1,0 +1,13 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+  - keycloak.yaml
+patchesStrategicMerge:
+  - patch.yaml
+secretGenerator:
+  - name: keycloak-secret
+    namespace: keycloak
+    behavior: merge
+    env: .env
+generatorOptions:
+  disableNameSuffixHash: true

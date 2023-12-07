@@ -1,0 +1,128 @@
+# add all module
+dn: cn=module{0},cn=config
+changetype: modify
+add: olcModuleLoad
+olcModuleLoad: memberof.so
+olcModuleLoad: refint.so
+olcModuleLoad: unique.so
+olcModuleLoad: dynlist.so
+
+# index for mdb
+dn: olcDatabase={2}mdb,cn=config
+changetype: modify
+# delete index if exist
+delete: olcDbIndex
+-
+# add index
+add: olcDbIndex
+olcDbIndex: objectClass pres,eq
+olcDbIndex: ou,cn,uid,mail pres,eq,sub
+olcDbIndex: sn,givenName,displayName pres,eq,sub
+olcDbIndex: member,memberOf pres,eq
+olcDbIndex: name,title,employeeNumber,employeeType,departmentNumber,businessCategory eq,sub
+
+# acl for mdb
+dn: olcDatabase={2}mdb,cn=config
+changetype: modify
+# delete acl if exist
+# delete: olcAccess
+# -
+# add acl
+add: olcAccess
+# password
+olcAccess: to attrs=userPassword
+  by group.exact="cn=super,ou=configs,dc=domain,dc=com" manage
+  by group.exact="cn=users,ou=configs,dc=domain,dc=com" write
+  by dn.base="uid=keycloak,ou=services,dc=domain,dc=com" write
+  by self write
+  by anonymous auth
+  by * none
+# owner and seeAlso
+olcAccess: to attrs=owner,seeAlso
+  by group.exact="cn=super,ou=configs,dc=domain,dc=com" manage
+  by group.exact="cn=groups,ou=configs,dc=domain,dc=com" write
+  by set="this/owner & user" write
+  by set="this/owner/manager* & user" write
+  by set="this/seeAlso/owner & user" write
+  by set="this/seeAlso/owner/manager* & user" write
+  by users read
+  by * none
+# users
+olcAccess: to dn.children="ou=users,dc=domain,dc=com"
+  by group.exact="cn=users,ou=configs,dc=domain,dc=com" write
+  by set="this/seeAlso/owner* & user" write
+  by set="this/seeAlso/owner*/secretary* & user" write
+  by set="this/seeAlso/owner/manager* & user" write
+  by set="this/seeAlso/owner/manager*/secretary* & user" write
+  by set="this/seeAlso/manager* & user" write
+  by set="this/seeAlso/manager*/secretary* & user" write
+  by set="this/manager* & user" write
+  by set="this/manager*/secretary* & user" write
+  by set="this/seeAlso/member* & user" read
+  by set="user/manager* & this" read
+  by set="user/-1/seeAlso/member & this" read
+  by set="user/manager & this/manager" read
+  by set="user/manager* & this/seeAlso/manager" read
+  by dn.children="ou=services,dc=domain,dc=com" read
+  by * break
+# groups
+olcAccess: to dn.children="ou=groups,dc=domain,dc=com"
+  by group.exact="cn=groups,ou=configs,dc=domain,dc=com" write
+  by set="this/owner* & user" write
+  by set="this/owner*/secretary* & user" write
+  by set="this/owner/manager* & user" write
+  by set="this/owner/manager*/secretary* & user" write
+  by set="this/manager* & user" write
+  by set="this/manager*/secretary* & user" write
+  by set="this/member* & user" read
+  by set="user/manager* & this/manager" read
+  by dn.children="ou=services,dc=domain,dc=com" read
+  by * break
+# app services
+olcAccess: to dn.children="ou=services,dc=domain,dc=com"
+  by group.exact="cn=services,ou=configs,dc=domain,dc=com" write
+  by * break
+olcAccess: to dn.one="dc=domain,dc=com" attrs=children
+  by set="this/seeAlso/member* & user" write
+  by * break
+olcAccess: to dn.regex="^([^,]+,)?dc=domain,dc=com$"
+  by group.exact="cn=super,ou=configs,dc=domain,dc=com" manage
+  by users read
+olcAccess: to dn.base="" by * read
+olcAccess: to *
+  by group.exact="cn=super,ou=configs,dc=domain,dc=com" manage
+  by self read
+  by * none
+
+# add memberOf policy to db
+dn: olcOverlay=memberof,olcDatabase={2}mdb,cn=config
+changetype: add
+objectClass: olcOverlayConfig
+objectClass: olcMemberOfConfig
+olcOverlay: memberof
+olcMemberOfGroupOC: groupOfURLs
+olcMemberOfRefInt: TRUE
+
+# add refint policy to db
+dn: olcOverlay=refint,olcDatabase={2}mdb,cn=config
+changetype: add
+objectClass: olcOverlayConfig
+objectClass: olcRefintConfig
+olcOverlay: refint
+olcRefintAttribute: memberOf member owner manager secretary seeAlso
+
+# add unique policy to db
+dn: olcOverlay=unique,olcDatabase={2}mdb,cn=config
+changetype: add
+objectClass: olcOverlayConfig
+objectClass: olcUniqueConfig
+olcOverlay: unique
+olcUniqueURI: ldap:///ou=users,dc=domain,dc=com?uid?sub?
+
+# add dynlist policy to db
+dn: olcOverlay=dynlist,olcDatabase={2}mdb,cn=config
+changetype: add
+objectClass: olcOverlayConfig
+objectClass: olcDynListConfig
+olcOverlay: dynlist
+olcDynListAttrSet: groupOfURLs memberURL member+memberOf@groupOfURLs*

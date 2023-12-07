@@ -1,0 +1,13 @@
+
+# harbor
+harbor/harbor.yml
+
+# ignore
+ignore
+test
+
+# secret and patch
+.env
+*.env
+patch.yaml
+*.patch.yaml

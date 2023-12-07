@@ -1,0 +1,76 @@
+gitea:
+  additionalConfigFromEnvs:
+    - name: GITEA__DATABASE__HOST
+      valueFrom:
+        secretKeyRef:
+          name: postgres-secret
+          key: host
+    - name: GITEA__DATABASE__PASSWD
+      valueFrom:
+        secretKeyRef:
+          name: postgres-secret
+          key: password
+  additionalConfigSources:
+    - secret:
+        secretName: gitea-app-ini-oauth
+    - configMap:
+        name: gitea-app-ini-plaintext
+  admin:
+    existingSecret: gitea-admin-secret
+    #username: super
+    #password: super
+  config:
+    APP_NAME: "Gitea"
+    cache:
+      ADAPTER: redis
+      ENABLED: true
+      HOST: "redis://:password@redis.domain.com:6379/0?pool_size=100&idle_timeout=180s&"
+    database:
+      DB_TYPE: postgres
+      #HOST: db.domain.com:5432
+      NAME: gitea
+      USER: gitea
+      #PASSWD: gitea@domain!
+    queue:
+      TYPE: redis
+      #CONN_STR: "redis://:password@redis.domain.com:6379/0?pool_size=100&idle_timeout=180s&"
+    session:
+      PROVIDER: redis
+      PROVIDER_CONFIG: "redis://:password@redis.domain.com:6379/0?pool_size=100&idle_timeout=180s&"
+  imageRegistry: "registry.domain.com"
+
+ingress:
+  enabled: true
+  className: nginx
+  annotations:
+    cert-manager.io/cluster-issuer: "domain-ca-issuer"
+    cert-manager.io/common-name: "domain Gitea Hub"
+  hosts:
+    - host: hub.domain.com
+  tls:
+    - hosts:
+        - hub.domain.com
+      secretName: gitea-tls
+
+nodeSelector:
+  kubernetes.io/hostname: rpa-node2
+
+persistence:
+  enabled: true
+  storageClass: openebs-local
+  claimName: gitea-pvc
+
+postgresql:
+  enabled: false
+
+postgresql-ha:
+  enabled: false
+
+redis-cluster:
+  enabled: false
+
+#service:
+#  http:
+#    type: NodePort
+#    nodePort: 30300
+#    externalTrafficPolicy: Local

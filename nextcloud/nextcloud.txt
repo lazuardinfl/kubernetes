@@ -1,0 +1,3 @@
+
+helm template nextcloud nextcloud-aio/nextcloud-aio-helm-chart --insecure-skip-tls-verify -n nextcloud > temp.yaml
+helm template nextcloud nextcloud-aio/nextcloud-aio-helm-chart --insecure-skip-tls-verify -n nextcloud -f values1.yaml > temp1.yaml

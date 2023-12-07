@@ -1,0 +1,13 @@
+# add unique to module
+dn: cn=module{0},cn=config
+changetype: modify
+add: olcModuleLoad
+olcModuleLoad: unique.so
+
+# add unique policy to db
+dn: olcOverlay=unique,olcDatabase={2}mdb,cn=config
+changetype: add
+objectClass: olcOverlayConfig
+objectClass: olcUniqueConfig
+olcOverlay: unique
+olcUniqueURI: ldap:///ou=users,dc=domain,dc=com?uid?sub?

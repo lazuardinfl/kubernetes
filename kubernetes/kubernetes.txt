@@ -1,0 +1,142 @@
+
+sudo systemctl edit docker.service
+[Unit]
+After=named.service postgresql.service redis-stack-server.service
+Wants=named.service postgresql.service redis-stack-server.service
+sudo systemctl daemon-reload
+
+###
+
+cat <<EOF | sudo tee /etc/modules-load.d/k8s.conf
+overlay
+br_netfilter
+EOF
+
+sudo modprobe overlay
+sudo modprobe br_netfilter
+
+# sysctl params required by setup, params persist across reboots
+cat <<EOF | sudo tee /etc/sysctl.d/k8s.conf
+net.bridge.bridge-nf-call-iptables = 1
+net.bridge.bridge-nf-call-ip6tables = 1
+net.ipv4.ip_forward = 1
+EOF
+
+# Apply sysctl params without reboot
+sudo sysctl --system
+
+lsmod | grep br_netfilter
+lsmod | grep overlay
+
+sysctl net.bridge.bridge-nf-call-iptables net.bridge.bridge-nf-call-ip6tables net.ipv4.ip_forward
+
+curl -fsSL https://pkgs.k8s.io/core:/stable:/v1.28/deb/Release.key | sudo gpg --dearmor -o /etc/apt/keyrings/kubernetes-apt-keyring.gpg
+echo 'deb [signed-by=/etc/apt/keyrings/kubernetes-apt-keyring.gpg] https://pkgs.k8s.io/core:/stable:/v1.27/deb/ /' | sudo tee /etc/apt/sources.list.d/kubernetes.list
+apt-cache madison kubelet | tac
+apt-cache madison kubeadm | tac
+apt-cache madison kubectl | tac
+sudo apt-get install -y kubelet=1.27.4-1.1 kubeadm=1.27.4-1.1 kubectl=1.27.4-1.1
+sudo apt-mark hold kubelet kubeadm kubectl
+
+sudo kubeadm init --pod-network-cidr=10.244.0.0/16 --skip-phases=addon/kube-proxy
+sudo kubeadm join 192.168.100.1:6443 --token bphms7.hi6hz1sqtew9d6ks --discovery-token-ca-cert-hash sha256:5b23941123f70a3cea291309b7aaac0b70b6bc96c40997ebd409ca86402aba9e
+
+kubectl taint nodes --all node-role.kubernetes.io/control-plane-
+kubectl taint nodes --all node-role.kubernetes.io/master-
+
+###
+
+helm template cilium cilium/cilium --version 1.14.1 \
+--namespace kube-system \
+--set operator.replicas=1 \
+--set kubeProxyReplacement=true \
+--set tunnel=disabled \
+--set loadBalancer.mode=dsr \
+--set loadBalancer.algorithm=maglev \
+--set loadBalancer.dsrDispatch=geneve \
+--set loadBalancer.acceleration=native \
+--set bpf.masquerade=true \
+--set autoDirectNodeRoutes=true \
+--set k8sServicePort=6443 \
+--set k8sServiceHost=192.168.100.1 \
+--set ipv4NativeRoutingCIDR=10.244.0.0/16 \
+--set ipam.operator.clusterPoolIPv4PodCIDRList=10.244.0.0/16 > projects/cilium/cilium.yaml
+
+docker pull cilium/cilium:v1.14.1
+docker pull cilium/operator-generic:v1.14.1
+docker pull quay.io/cilium/json-mock:v1.3.2
+docker pull quay.io/cilium/alpine-curl:v1.5.0
+
+docker tag c961e5e7cae7 registry.domain.com/cilium/operator-generic:v1.14.1
+docker tag 33a5be5e9ebc registry.domain.com/cilium/cilium:v1.14.1
+docker tag 20f9fae6c444 registry.domain.com/cilium/json-mock:v1.3.2
+
+###
+
+kubectl create secret tls domain-cert --key domain.key --cert domain.crt
+
+helm template kubernetes-dashboard kubernetes-dashboard/kubernetes-dashboard --version 7.0.0-alpha1 \
+--create-namespace --namespace kubernetes-dashboard \
+--set cert-manager.enabled=false --set nginx.enabled=false --set=app.ingress.enabled=false > projects/kubernetes/dashboard.yaml
+
+nodeSelector:
+  node-role.kubernetes.io/control-plane: ""
+
+###
+
+sudo crictl -r unix:///run/containerd/containerd.sock images ls
+
+kubectl drain <node> --delete-emptydir-data --force --ignore-daemonsets
+kubectl delete node <node>
+kubeadm reset (on removed node)
+
+docker pull registry.k8s.io/kube-apiserver:v1.27.5
+docker pull registry.k8s.io/kube-controller-manager:v1.27.5
+docker pull registry.k8s.io/kube-scheduler:v1.27.5
+docker pull registry.k8s.io/kube-proxy:v1.27.5
+docker pull registry.k8s.io/pause:3.9
+docker pull registry.k8s.io/etcd:3.5.7-0
+docker pull registry.k8s.io/coredns/coredns:v1.10.1
+
+sudo crictl -r unix:///run/containerd/containerd.sock pull registry.domain.com/kubernetes/kube-apiserver:v1.27.5
+sudo crictl -r unix:///run/containerd/containerd.sock pull registry.domain.com/kubernetes/kube-controller-manager:v1.27.5
+sudo crictl -r unix:///run/containerd/containerd.sock pull registry.domain.com/kubernetes/kube-scheduler:v1.27.5
+sudo crictl -r unix:///run/containerd/containerd.sock pull registry.domain.com/kubernetes/kube-proxy:v1.27.5
+sudo crictl -r unix:///run/containerd/containerd.sock pull registry.domain.com/kubernetes/pause:3.9
+sudo crictl -r unix:///run/containerd/containerd.sock pull registry.domain.com/kubernetes/etcd:3.5.7-0
+sudo crictl -r unix:///run/containerd/containerd.sock pull registry.domain.com/kubernetes/coredns:v1.10.1
+
+sudo ctr -n=k8s.io image tag registry.domain.com/kubernetes/kube-apiserver:v1.27.5 registry.k8s.io/kube-apiserver:v1.27.5
+sudo ctr -n=k8s.io image tag registry.domain.com/kubernetes/kube-controller-manager:v1.27.5 registry.k8s.io/kube-controller-manager:v1.27.5
+sudo ctr -n=k8s.io image tag registry.domain.com/kubernetes/kube-scheduler:v1.27.5 registry.k8s.io/kube-scheduler:v1.27.5
+sudo ctr -n=k8s.io image tag registry.domain.com/kubernetes/kube-proxy:v1.27.5 registry.k8s.io/kube-proxy:v1.27.5
+sudo ctr -n=k8s.io image tag registry.domain.com/kubernetes/pause:3.9 registry.k8s.io/pause:3.9
+sudo ctr -n=k8s.io image tag registry.domain.com/kubernetes/etcd:3.5.7-0 registry.k8s.io/etcd:3.5.7-0
+sudo ctr -n=k8s.io image tag registry.domain.com/kubernetes/coredns:v1.10.1 registry.k8s.io/coredns/coredns:v1.10.1
+
+registry.domain.com/ingress-nginx/controller:v1.8.1
+registry.domain.com/ingress-nginx/kube-webhook-certgen:v20230407
+registry.domain.com/apache/httpd:2.4.57-alpine3.18
+
+post-up iptables -t nat -A PREROUTING -i enp0s31f6 -p tcp --dport 30080 -j DNAT --to 192.168.100.1:30080
+post-down iptables -t nat -D PREROUTING -i enp0s31f6 -p tcp --dport 30080 -j DNAT --to 192.168.100.1:30080
+
+curl 192.168.100.1:30080 -H 'Host: web.domain.com'
+
+kubectl port-forward service/ingress-nginx-controller 30080:30080
+
+ifdown vmbr0
+ifup vmbr0
+
+ifdown enp6s18
+ifup enp6s18
+
+So, running cilium in direct routing mode with full ebpf support, no kube-proxy, DSR and LB services announced via BGP rock solid on bare-metal production k8s
+for the past few years could be making me $£¥?!? Who would have thought…
+
+iptables -t nat -A PREROUTING -i enp0s31f6 -p tcp --dport 30080 -j DNAT --to 192.168.100.1:30080
+iptables -t nat -D PREROUTING -i enp0s31f6 -p tcp --dport 30080 -j DNAT --to 192.168.100.1:30080
+
+lvextend -l +100%FREE /dev/ubuntu-vg/ubuntu-lv
+resize2fs /dev/mapper/ubuntu--vg-ubuntu--lv
+

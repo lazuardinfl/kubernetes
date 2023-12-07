@@ -1,0 +1,13 @@
+# add dynlist to module
+dn: cn=module{0},cn=config
+changetype: modify
+add: olcModuleLoad
+olcModuleLoad: dynlist.so
+
+# add dynlist policy to db
+dn: olcOverlay=dynlist,olcDatabase={2}mdb,cn=config
+changetype: add
+objectClass: olcOverlayConfig
+objectClass: olcDynListConfig
+olcOverlay: dynlist
+olcDynListAttrSet: groupOfURLs memberURL member+memberOf@groupOfURLs*

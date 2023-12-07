@@ -1,0 +1,48 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: proxmox
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: proxmox
+  namespace: proxmox
+spec:
+  type: ExternalName
+  externalName: proxmox.domain.com
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: proxmox-ingress
+  namespace: proxmox
+  annotations:
+    cert-manager.io/cluster-issuer: "org-ca-issuer"
+    cert-manager.io/common-name: "Proxmox"
+    nginx.ingress.kubernetes.io/proxy-body-size: "0"
+    nginx.ingress.kubernetes.io/proxy-connect-timeout: "3600"
+    nginx.ingress.kubernetes.io/proxy-send-timeout: "3600"
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "3600"
+    nginx.ingress.kubernetes.io/backend-protocol: "HTTPS"
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/ssl-prefer-server-ciphers: "false"
+    nginx.ingress.kubernetes.io/server-snippet: |
+      ssl_session_timeout 1d;
+spec:
+  ingressClassName: nginx
+  tls:
+    - hosts:
+        - proxmox.domain.com
+      secretName: proxmox-tls
+  rules:
+  - host: proxmox.domain.com
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: proxmox
+            port:
+              number: 8006

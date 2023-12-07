@@ -1,0 +1,10 @@
+services:
+  argocd-vault-plugin:
+    image: ${IMAGE_NAME}
+    build:
+      context: ${CONTEXT}
+      dockerfile: ${DOCKERFILE}
+      args:
+        - ROOT_CA=${ROOT_CA}
+        - AVP=${AVP}
+        - KUSTOMIZE=${KUSTOMIZE}

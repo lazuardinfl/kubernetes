@@ -1,0 +1,10 @@
+
+# node selector
+untuk kind: Deployment deploy di master node
+
+# change local folder permissions
+sudo groupadd openebs
+sudo usermod -aG openebs $USER
+exit
+sudo chown :openebs /var/openebs/local
+sudo chmod 770 /var/openebs/local

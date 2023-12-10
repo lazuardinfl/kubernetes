@@ -8,9 +8,9 @@ gitea:
     database:
       DB_TYPE: postgres
       HOST: db.domain.com:5432
-      NAME: gitea
-      USER: gitea
-      #PASSWD: gitea@domain!
+      NAME: db_name
+      USER: db_user
+      #PASSWD: db_pass
     queue:
       TYPE: redis
       CONN_STR: "redis://:password@redis.domain.com:6379/0?pool_size=100&idle_timeout=180s&"

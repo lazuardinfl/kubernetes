@@ -43,10 +43,8 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  annotations:
-    kompose.version: 1.31.2 (a92241f79)
   labels:
-    io.kompose.service: nextcloud-aio-imaginary
+    app.kubernetes.io/name: nextcloud-aio-imaginary
   name: nextcloud-aio-imaginary
 spec:
   ipFamilyPolicy: PreferDualStack
@@ -55,15 +53,13 @@ spec:
       port: 9000
       targetPort: 9000
   selector:
-    io.kompose.service: nextcloud-aio-imaginary
+    app.kubernetes.io/name: nextcloud-aio-imaginary
 ---
 apiVersion: v1
 kind: Service
 metadata:
-  annotations:
-    kompose.version: 1.31.2 (a92241f79)
   labels:
-    io.kompose.service: nextcloud-aio-nextcloud
+    app.kubernetes.io/name: nextcloud-aio-nextcloud
   name: nextcloud-aio-nextcloud
 spec:
   ipFamilyPolicy: PreferDualStack
@@ -75,15 +71,13 @@ spec:
       port: 9001
       targetPort: 9001
   selector:
-    io.kompose.service: nextcloud-aio-nextcloud
+    app.kubernetes.io/name: nextcloud-aio-nextcloud
 ---
 apiVersion: v1
 kind: Service
 metadata:
-  annotations:
-    kompose.version: 1.31.2 (a92241f79)
   labels:
-    io.kompose.service: nextcloud-aio-notify-push
+    app.kubernetes.io/name: nextcloud-aio-notify-push
   name: nextcloud-aio-notify-push
 spec:
   ipFamilyPolicy: PreferDualStack
@@ -92,28 +86,23 @@ spec:
       port: 7867
       targetPort: 7867
   selector:
-    io.kompose.service: nextcloud-aio-notify-push
+    app.kubernetes.io/name: nextcloud-aio-notify-push
 ---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  annotations:
-    kompose.version: 1.31.2 (a92241f79)
   labels:
-    io.kompose.service: nextcloud-aio-imaginary
+    app.kubernetes.io/name: nextcloud-aio-imaginary
   name: nextcloud-aio-imaginary
 spec:
   replicas: 1
   selector:
     matchLabels:
-      io.kompose.service: nextcloud-aio-imaginary
+      app.kubernetes.io/name: nextcloud-aio-imaginary
   template:
     metadata:
-      annotations:
-        kompose.version: 1.31.2 (a92241f79)
       labels:
-        io.kompose.network/nextcloud-aio: "true"
-        io.kompose.service: nextcloud-aio-imaginary
+        app.kubernetes.io/name: nextcloud-aio-imaginary
     spec:
       containers:
         - env:
@@ -133,31 +122,26 @@ spec:
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  annotations:
-    kompose.version: 1.31.2 (a92241f79)
   labels:
-    io.kompose.service: nextcloud-aio-nextcloud
+    app.kubernetes.io/name: nextcloud-aio-nextcloud
   name: nextcloud-aio-nextcloud
 spec:
   replicas: 1
   selector:
     matchLabels:
-      io.kompose.service: nextcloud-aio-nextcloud
+      app.kubernetes.io/name: nextcloud-aio-nextcloud
   template:
     metadata:
-      annotations:
-        kompose.version: 1.31.2 (a92241f79)
       labels:
-        io.kompose.network/nextcloud-aio: "true"
-        io.kompose.service: nextcloud-aio-nextcloud
+        app.kubernetes.io/name: nextcloud-aio-nextcloud
     spec:
       initContainers:
-        - name: delete
+        - name: delete-lost-found
           image: alpine:3.18.5
           command:
             - rm
             - "-rf"
-            - /nextcloud-aio-nextcloud/lost+found
+            - "/nextcloud-aio-nextcloud/lost+found"
           volumeMounts:
             - name: nextcloud-aio-nextcloud-trusted-cacerts
               mountPath: /nextcloud-aio-nextcloud-trusted-cacerts
@@ -251,20 +235,8 @@ spec:
               value: "1G"
             - name: PHP_UPLOAD_LIMIT
               value: "10G"
-            - name: POSTGRES_DB
-              value: nextcloud_database
-            - name: POSTGRES_HOST
-              value: nextcloud-aio-database
-            - name: POSTGRES_PASSWORD
-              value: "db_pass"
-            - name: POSTGRES_USER
-              value: nextcloud
             - name: RECORDING_SECRET
               value: ""
-            - name: REDIS_HOST
-              value: nextcloud-aio-redis
-            - name: REDIS_HOST_PASSWORD
-              value: "redis_pass"
             - name: REMOVE_DISABLED_APPS
               value: "true"
             - name: SIGNALING_SECRET
@@ -307,34 +279,29 @@ spec:
       volumes:
         - name: nextcloud-aio-nextcloud
           persistentVolumeClaim:
-            claimName: nextcloud-aio-nextcloud
+            claimName: nextcloud-aio-nextcloud-pvc
         - name: nextcloud-aio-nextcloud-data
           persistentVolumeClaim:
             claimName: nextcloud-aio-nextcloud-data
-        - name: nextcloud-aio-nextcloud-trusted-cacerts
+        - name: nextcloud-aio-nextcloud-trusted-cacerts-pvc
           persistentVolumeClaim:
-            claimName: nextcloud-aio-nextcloud-trusted-cacerts
+            claimName: nextcloud-aio-nextcloud-trusted-cacerts-pvc
 ---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  annotations:
-    kompose.version: 1.31.2 (a92241f79)
   labels:
-    io.kompose.service: nextcloud-aio-notify-push
+    app.kubernetes.io/name: nextcloud-aio-notify-push
   name: nextcloud-aio-notify-push
 spec:
   replicas: 1
   selector:
     matchLabels:
-      io.kompose.service: nextcloud-aio-notify-push
+      app.kubernetes.io/name: nextcloud-aio-notify-push
   template:
     metadata:
-      annotations:
-        kompose.version: 1.31.2 (a92241f79)
       labels:
-        io.kompose.network/nextcloud-aio: "true"
-        io.kompose.service: nextcloud-aio-notify-push
+        app.kubernetes.io/name: nextcloud-aio-notify-push
     spec:
       initContainers:
         - name: init-volumes
@@ -354,18 +321,6 @@ spec:
               value: "domain.com"
             - name: NEXTCLOUD_HOST
               value: nextcloud-aio-nextcloud
-            - name: POSTGRES_DB
-              value: nextcloud_database
-            - name: POSTGRES_HOST
-              value: nextcloud-aio-database
-            - name: POSTGRES_PASSWORD
-              value: "db_pass"
-            - name: POSTGRES_USER
-              value: nextcloud
-            - name: REDIS_HOST
-              value: nextcloud-aio-redis
-            - name: REDIS_HOST_PASSWORD
-              value: "redis_pass"
           envFrom:
             - secretRef:
                 name: nextcloud-secret
@@ -380,4 +335,4 @@ spec:
       volumes:
         - name: nextcloud-aio-nextcloud
           persistentVolumeClaim:
-            claimName: nextcloud-aio-nextcloud
+            claimName: nextcloud-aio-nextcloud-pvc

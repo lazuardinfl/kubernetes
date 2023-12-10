@@ -3,8 +3,8 @@ kind: Kustomization
 namespace: argocd
 resources:
   - argocd.yaml
-  - argocd-configs.yaml
-  - argocd-workloads.yaml
+  - argocd-config.yaml
+  - argocd-workload.yaml
 patchesStrategicMerge:
   - patch.yaml
 secretGenerator:

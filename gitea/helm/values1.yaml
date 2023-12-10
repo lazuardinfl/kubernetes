@@ -17,8 +17,8 @@ gitea:
         name: gitea-app-ini-plaintext
   admin:
     existingSecret: gitea-admin-secret
-    #username: super
-    #password: super
+    #username: admin_gitea
+    #password: pass
   config:
     APP_NAME: "Gitea"
     cache:
@@ -28,9 +28,9 @@ gitea:
     database:
       DB_TYPE: postgres
       #HOST: db.domain.com:5432
-      NAME: gitea
-      USER: gitea
-      #PASSWD: gitea@domain!
+      NAME: db_name
+      USER: db_user
+      #PASSWD: db_pass
     queue:
       TYPE: redis
       #CONN_STR: "redis://:password@redis.domain.com:6379/0?pool_size=100&idle_timeout=180s&"
@@ -53,7 +53,7 @@ ingress:
       secretName: gitea-tls
 
 nodeSelector:
-  kubernetes.io/hostname: rpa-node2
+  kubernetes.io/hostname: node-name
 
 persistence:
   enabled: true

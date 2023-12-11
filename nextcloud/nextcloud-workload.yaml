@@ -17,6 +17,7 @@ spec:
       initContainers:
         - name: init-volumes
           image: alpine:3.18.5
+          imagePullPolicy: IfNotPresent
           command:
             - chmod
             - "777"
@@ -30,6 +31,7 @@ spec:
       containers:
         - name: nextcloud-aio-apache
           image: nextcloud/aio-apache:20231130_081302-latest
+          imagePullPolicy: IfNotPresent
           env:
             - name: APACHE_MAX_SIZE
               value: "10737418240"
@@ -93,6 +95,7 @@ spec:
       containers:
         - name: nextcloud-aio-imaginary
           image: nextcloud/aio-imaginary:20231130_081302-latest
+          imagePullPolicy: IfNotPresent
           env:
             - name: TZ
               value: "Asia/Jakarta"
@@ -124,6 +127,7 @@ spec:
       initContainers:
         - name: delete-lost-found
           image: alpine:3.18.5
+          imagePullPolicy: IfNotPresent
           command:
             - rm
             - "-rf"
@@ -135,6 +139,7 @@ spec:
               mountPath: /nextcloud-aio-nextcloud
         - name: init-volumes
           image: alpine:3.18.5
+          imagePullPolicy: IfNotPresent
           command:
             - chmod
             - "777"
@@ -148,6 +153,7 @@ spec:
       containers:
         - name: nextcloud-aio-nextcloud
           image: nextcloud/aio-nextcloud:20231130_081302-latest
+          imagePullPolicy: IfNotPresent
           env:
             - name: SMTP_HOST
               value: ""
@@ -224,7 +230,7 @@ spec:
             - name: SIGNALING_SECRET
               value: ""
             - name: STARTUP_APPS
-              value: "deck twofactor_totp tasks calendar contacts notes"
+              value: ""
             - name: TALK_ENABLED
               value: "no"
             - name: TALK_PORT
@@ -290,6 +296,7 @@ spec:
       initContainers:
         - name: init-volumes
           image: alpine:3.18.5
+          imagePullPolicy: IfNotPresent
           command:
             - chmod
             - "777"
@@ -300,6 +307,7 @@ spec:
       containers:
         - name: nextcloud-aio-notify-push
           image: nextcloud/aio-notify-push:20231130_081302-latest
+          imagePullPolicy: IfNotPresent
           env:
             - name: NEXTCLOUD_HOST
               value: nextcloud-aio-nextcloud

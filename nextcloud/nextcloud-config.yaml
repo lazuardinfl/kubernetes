@@ -5,7 +5,8 @@ metadata:
   labels:
     app.kubernetes.io/name: nextcloud
 data:
-  redis.server: "redis.domain.com:6379"
+  NC_DOMAIN: nextcloud.domain.com
+  OVERWRITEHOST: nextcloud.domain.com
 ---
 apiVersion: v1
 kind: Secret

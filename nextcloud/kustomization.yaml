@@ -3,3 +3,4 @@ kind: Kustomization
 resources:
   - nextcloud.yaml
   - nextcloud-config.yaml
+  - nextcloud-workload.yaml

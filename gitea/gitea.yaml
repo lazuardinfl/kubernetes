@@ -166,12 +166,12 @@ spec:
             - name: GITEA_ADMIN_USERNAME
               valueFrom:
                 secretKeyRef:
-                  key:  GITEA_ADMIN_USERNAME
+                  key: GITEA_ADMIN_USERNAME
                   name: gitea-secret
             - name: GITEA_ADMIN_PASSWORD
               valueFrom:
                 secretKeyRef:
-                  key:  GITEA_ADMIN_PASSWORD
+                  key: GITEA_ADMIN_PASSWORD
                   name: gitea-secret
           volumeMounts:
             - name: init

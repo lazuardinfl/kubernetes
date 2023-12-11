@@ -5,6 +5,7 @@ harbor/harbor.yml
 # ignore
 ignore
 test
+*.ex.*
 
 # secret and patch
 .env

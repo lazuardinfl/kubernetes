@@ -1,0 +1,325 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app.kubernetes.io/name: nextcloud-aio-apache
+  name: nextcloud-aio-apache
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: nextcloud-aio-apache
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: nextcloud-aio-apache
+    spec:
+      initContainers:
+        - name: init-volumes
+          image: alpine:3.18.5
+          command:
+            - chmod
+            - "777"
+            - /nextcloud-aio-nextcloud
+            - /nextcloud-aio-apache
+          volumeMounts:
+            - name: nextcloud-aio-apache
+              mountPath: /nextcloud-aio-apache
+            - name: nextcloud-aio-nextcloud
+              mountPath: /nextcloud-aio-nextcloud
+      containers:
+        - name: nextcloud-aio-apache
+          image: nextcloud/aio-apache:20231130_081302-latest
+          env:
+            - name: APACHE_MAX_SIZE
+              value: "10737418240"
+            - name: APACHE_MAX_TIME
+              value: "3600"
+            - name: APACHE_PORT
+              value: "8000"
+            - name: COLLABORA_HOST
+              value: nextcloud-aio-collabora
+            - name: NEXTCLOUD_HOST
+              value: nextcloud-aio-nextcloud
+            - name: NOTIFY_PUSH_HOST
+              value: nextcloud-aio-notify-push
+            - name: ONLYOFFICE_HOST
+              value: nextcloud-aio-onlyoffice
+            - name: TALK_HOST
+              value: nextcloud-aio-talk
+            - name: TZ
+              value: "Asia/Jakarta"
+            - name: NC_DOMAIN
+              valueFrom:
+                configMapKeyRef:
+                  key: NC_DOMAIN
+                  name: nextcloud-config
+          ports:
+            - containerPort: 8000
+              protocol: TCP
+            - containerPort: 8000
+              protocol: UDP
+          volumeMounts:
+            - mountPath: /var/www/html
+              name: nextcloud-aio-nextcloud
+              readOnly: true
+            - mountPath: /mnt/data
+              name: nextcloud-aio-apache
+          resources: {}
+      volumes:
+        - name: nextcloud-aio-nextcloud
+          persistentVolumeClaim:
+            claimName: nextcloud-aio-nextcloud-pvc
+        - name: nextcloud-aio-apache
+          persistentVolumeClaim:
+            claimName: nextcloud-aio-apache-pvc
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app.kubernetes.io/name: nextcloud-aio-imaginary
+  name: nextcloud-aio-imaginary
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: nextcloud-aio-imaginary
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: nextcloud-aio-imaginary
+    spec:
+      containers:
+        - name: nextcloud-aio-imaginary
+          image: nextcloud/aio-imaginary:20231130_081302-latest
+          env:
+            - name: TZ
+              value: "Asia/Jakarta"
+          ports:
+            - containerPort: 9000
+              protocol: TCP
+          securityContext:
+            capabilities:
+              add:
+                - SYS_NICE
+          resources: {}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app.kubernetes.io/name: nextcloud-aio-nextcloud
+  name: nextcloud-aio-nextcloud
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: nextcloud-aio-nextcloud
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: nextcloud-aio-nextcloud
+    spec:
+      initContainers:
+        - name: delete-lost-found
+          image: alpine:3.18.5
+          command:
+            - rm
+            - "-rf"
+            - "/nextcloud-aio-nextcloud/lost+found"
+          volumeMounts:
+            - name: nextcloud-aio-nextcloud-trusted-cacerts
+              mountPath: /nextcloud-aio-nextcloud-trusted-cacerts
+            - name: nextcloud-aio-nextcloud
+              mountPath: /nextcloud-aio-nextcloud
+        - name: init-volumes
+          image: alpine:3.18.5
+          command:
+            - chmod
+            - "777"
+            - /nextcloud-aio-nextcloud
+            - /nextcloud-aio-nextcloud-trusted-cacerts
+          volumeMounts:
+            - name: nextcloud-aio-nextcloud-trusted-cacerts
+              mountPath: /nextcloud-aio-nextcloud-trusted-cacerts
+            - name: nextcloud-aio-nextcloud
+              mountPath: /nextcloud-aio-nextcloud
+      containers:
+        - name: nextcloud-aio-nextcloud
+          image: nextcloud/aio-nextcloud:20231130_081302-latest
+          env:
+            - name: SMTP_HOST
+              value: ""
+            - name: SMTP_SECURE
+              value: ""
+            - name: SMTP_PORT
+              value: ""
+            - name: SMTP_AUTHTYPE
+              value: ""
+            - name: SMTP_NAME
+              value: ""
+            - name: SMTP_PASSWORD
+              value: ""
+            - name: MAIL_FROM_ADDRESS
+              value: ""
+            - name: MAIL_DOMAIN
+              value: ""
+            - name: SUBSCRIPTION_KEY
+              value: ""
+            - name: APPS_ALLOWLIST
+              value: ""
+            - name: ADDITIONAL_TRUSTED_PROXY
+              value: ""
+            - name: ADDITIONAL_APKS
+              value: ""
+            - name: ADDITIONAL_PHP_EXTENSIONS
+              value: ""
+            - name: ADMIN_PASSWORD
+              value: "admin_pass"
+            - name: ADMIN_USER
+              value: admin
+            - name: APACHE_PORT
+              value: "8000"
+            - name: CLAMAV_ENABLED
+              value: "no"
+            - name: CLAMAV_HOST
+              value: nextcloud-aio-clamav
+            - name: COLLABORA_ENABLED
+              value: "no"
+            - name: COLLABORA_HOST
+              value: nextcloud-aio-collabora
+            - name: FULLTEXTSEARCH_ENABLED
+              value: "no"
+            - name: FULLTEXTSEARCH_HOST
+              value: nextcloud-aio-fulltextsearch
+            - name: FULLTEXTSEARCH_PASSWORD
+              value: ""
+            - name: IMAGINARY_ENABLED
+              value: "yes"
+            - name: IMAGINARY_HOST
+              value: nextcloud-aio-imaginary
+            - name: INSTALL_LATEST_MAJOR
+              value: "false"
+            - name: NEXTCLOUD_DATA_DIR
+              value: /mnt/ncdata
+            - name: ONLYOFFICE_ENABLED
+              value: "no"
+            - name: ONLYOFFICE_HOST
+              value: nextcloud-aio-onlyoffice
+            - name: ONLYOFFICE_SECRET
+              value: ""
+            - name: OVERWRITEPROTOCOL
+              value: https
+            - name: PHP_MAX_TIME
+              value: "3600"
+            - name: PHP_MEMORY_LIMIT
+              value: "1G"
+            - name: PHP_UPLOAD_LIMIT
+              value: "10G"
+            - name: RECORDING_SECRET
+              value: ""
+            - name: REMOVE_DISABLED_APPS
+              value: "true"
+            - name: SIGNALING_SECRET
+              value: ""
+            - name: STARTUP_APPS
+              value: "deck twofactor_totp tasks calendar contacts notes"
+            - name: TALK_ENABLED
+              value: "no"
+            - name: TALK_PORT
+              value: "3478"
+            - name: TALK_RECORDING_ENABLED
+              value: "no"
+            - name: TALK_RECORDING_HOST
+              value: nextcloud-aio-talk-recording
+            - name: TRUSTED_CACERTS_DIR
+              value: ""
+            - name: TURN_SECRET
+              value: ""
+            - name: TZ
+              value: "Asia/Jakarta"
+            - name: UPDATE_NEXTCLOUD_APPS
+              value: "false"
+          envFrom:
+            - configMapRef:
+                name: nextcloud-config
+            - secretRef:
+                name: nextcloud-secret
+          ports:
+            - containerPort: 9000
+              protocol: TCP
+            - containerPort: 9001
+              protocol: TCP
+          volumeMounts:
+            - mountPath: /var/www/html
+              name: nextcloud-aio-nextcloud
+            - mountPath: /mnt/ncdata
+              name: nextcloud-aio-nextcloud-data
+            - mountPath: /usr/local/share/ca-certificates
+              name: nextcloud-aio-nextcloud-trusted-cacerts
+              readOnly: true
+          resources: {}
+      volumes:
+        - name: nextcloud-aio-nextcloud
+          persistentVolumeClaim:
+            claimName: nextcloud-aio-nextcloud-pvc
+        - name: nextcloud-aio-nextcloud-data
+          persistentVolumeClaim:
+            claimName: nextcloud-aio-nextcloud-data-pvc
+        - name: nextcloud-aio-nextcloud-trusted-cacerts
+          persistentVolumeClaim:
+            claimName: nextcloud-aio-nextcloud-trusted-cacerts-pvc
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app.kubernetes.io/name: nextcloud-aio-notify-push
+  name: nextcloud-aio-notify-push
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: nextcloud-aio-notify-push
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: nextcloud-aio-notify-push
+    spec:
+      initContainers:
+        - name: init-volumes
+          image: alpine:3.18.5
+          command:
+            - chmod
+            - "777"
+            - /nextcloud-aio-nextcloud
+          volumeMounts:
+            - name: nextcloud-aio-nextcloud
+              mountPath: /nextcloud-aio-nextcloud
+      containers:
+        - name: nextcloud-aio-notify-push
+          image: nextcloud/aio-notify-push:20231130_081302-latest
+          env:
+            - name: NEXTCLOUD_HOST
+              value: nextcloud-aio-nextcloud
+            - name: NC_DOMAIN
+              valueFrom:
+                configMapKeyRef:
+                  key: NC_DOMAIN
+                  name: nextcloud-config
+          envFrom:
+            - secretRef:
+                name: nextcloud-secret
+          ports:
+            - containerPort: 7867
+              protocol: TCP
+          volumeMounts:
+            - mountPath: /nextcloud
+              name: nextcloud-aio-nextcloud
+              readOnly: true
+          resources: {}
+      volumes:
+        - name: nextcloud-aio-nextcloud
+          persistentVolumeClaim:
+            claimName: nextcloud-aio-nextcloud-pvc

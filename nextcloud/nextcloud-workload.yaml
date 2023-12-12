@@ -24,10 +24,12 @@ spec:
             - /nextcloud-aio-nextcloud
             - /nextcloud-aio-apache
           volumeMounts:
-            - name: nextcloud-aio-apache
+            - name: nextcloud-aio
               mountPath: /nextcloud-aio-apache
-            - name: nextcloud-aio-nextcloud
+              subPath: apache
+            - name: nextcloud-aio
               mountPath: /nextcloud-aio-nextcloud
+              subPath: nextcloud
       containers:
         - name: nextcloud-aio-apache
           image: nextcloud/aio-apache:20231130_081302-latest
@@ -38,7 +40,7 @@ spec:
             - name: APACHE_MAX_TIME
               value: "3600"
             - name: APACHE_PORT
-              value: "8000"
+              value: "11000"
             - name: COLLABORA_HOST
               value: nextcloud-aio-collabora
             - name: NEXTCLOUD_HOST
@@ -57,24 +59,23 @@ spec:
                   key: NC_DOMAIN
                   name: nextcloud-config
           ports:
-            - containerPort: 8000
+            - containerPort: 11000
               protocol: TCP
-            - containerPort: 8000
+            - containerPort: 11000
               protocol: UDP
           volumeMounts:
             - mountPath: /var/www/html
-              name: nextcloud-aio-nextcloud
+              name: nextcloud-aio
+              subPath: nextcloud
               readOnly: true
             - mountPath: /mnt/data
-              name: nextcloud-aio-apache
+              name: nextcloud-aio
+              subPath: apache
           resources: {}
       volumes:
-        - name: nextcloud-aio-nextcloud
+        - name: nextcloud-aio
           persistentVolumeClaim:
-            claimName: nextcloud-aio-nextcloud-pvc
-        - name: nextcloud-aio-apache
-          persistentVolumeClaim:
-            claimName: nextcloud-aio-apache-pvc
+            claimName: nextcloud-pvc
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -133,10 +134,12 @@ spec:
             - "-rf"
             - "/nextcloud-aio-nextcloud/lost+found"
           volumeMounts:
-            - name: nextcloud-aio-nextcloud-trusted-cacerts
+            - name: nextcloud-aio
               mountPath: /nextcloud-aio-nextcloud-trusted-cacerts
-            - name: nextcloud-aio-nextcloud
+              subPath: trusted-cacerts
+            - name: nextcloud-aio
               mountPath: /nextcloud-aio-nextcloud
+              subPath: nextcloud
         - name: init-volumes
           image: alpine:3.18.5
           imagePullPolicy: IfNotPresent
@@ -146,31 +149,17 @@ spec:
             - /nextcloud-aio-nextcloud
             - /nextcloud-aio-nextcloud-trusted-cacerts
           volumeMounts:
-            - name: nextcloud-aio-nextcloud-trusted-cacerts
+            - name: nextcloud-aio
               mountPath: /nextcloud-aio-nextcloud-trusted-cacerts
-            - name: nextcloud-aio-nextcloud
+              subPath: trusted-cacerts
+            - name: nextcloud-aio
               mountPath: /nextcloud-aio-nextcloud
+              subPath: nextcloud
       containers:
         - name: nextcloud-aio-nextcloud
           image: nextcloud/aio-nextcloud:20231130_081302-latest
           imagePullPolicy: IfNotPresent
           env:
-            - name: SMTP_HOST
-              value: ""
-            - name: SMTP_SECURE
-              value: ""
-            - name: SMTP_PORT
-              value: ""
-            - name: SMTP_AUTHTYPE
-              value: ""
-            - name: SMTP_NAME
-              value: ""
-            - name: SMTP_PASSWORD
-              value: ""
-            - name: MAIL_FROM_ADDRESS
-              value: ""
-            - name: MAIL_DOMAIN
-              value: ""
             - name: SUBSCRIPTION_KEY
               value: ""
             - name: APPS_ALLOWLIST
@@ -181,12 +170,8 @@ spec:
               value: ""
             - name: ADDITIONAL_PHP_EXTENSIONS
               value: ""
-            - name: ADMIN_PASSWORD
-              value: "admin_pass"
-            - name: ADMIN_USER
-              value: admin
             - name: APACHE_PORT
-              value: "8000"
+              value: "11000"
             - name: CLAMAV_ENABLED
               value: "no"
             - name: CLAMAV_HOST
@@ -259,75 +244,17 @@ spec:
               protocol: TCP
           volumeMounts:
             - mountPath: /var/www/html
-              name: nextcloud-aio-nextcloud
+              name: nextcloud-aio
+              subPath: nextcloud
             - mountPath: /mnt/ncdata
-              name: nextcloud-aio-nextcloud-data
+              name: nextcloud-aio
+              subPath: nextcloud-data
             - mountPath: /usr/local/share/ca-certificates
-              name: nextcloud-aio-nextcloud-trusted-cacerts
+              name: nextcloud-aio
+              subPath: trusted-cacerts
               readOnly: true
           resources: {}
       volumes:
-        - name: nextcloud-aio-nextcloud
+        - name: nextcloud-aio
           persistentVolumeClaim:
-            claimName: nextcloud-aio-nextcloud-pvc
-        - name: nextcloud-aio-nextcloud-data
-          persistentVolumeClaim:
-            claimName: nextcloud-aio-nextcloud-data-pvc
-        - name: nextcloud-aio-nextcloud-trusted-cacerts
-          persistentVolumeClaim:
-            claimName: nextcloud-aio-nextcloud-trusted-cacerts-pvc
----
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  labels:
-    app.kubernetes.io/name: nextcloud-aio-notify-push
-  name: nextcloud-aio-notify-push
-spec:
-  replicas: 1
-  selector:
-    matchLabels:
-      app.kubernetes.io/name: nextcloud-aio-notify-push
-  template:
-    metadata:
-      labels:
-        app.kubernetes.io/name: nextcloud-aio-notify-push
-    spec:
-      initContainers:
-        - name: init-volumes
-          image: alpine:3.18.5
-          imagePullPolicy: IfNotPresent
-          command:
-            - chmod
-            - "777"
-            - /nextcloud-aio-nextcloud
-          volumeMounts:
-            - name: nextcloud-aio-nextcloud
-              mountPath: /nextcloud-aio-nextcloud
-      containers:
-        - name: nextcloud-aio-notify-push
-          image: nextcloud/aio-notify-push:20231130_081302-latest
-          imagePullPolicy: IfNotPresent
-          env:
-            - name: NEXTCLOUD_HOST
-              value: nextcloud-aio-nextcloud
-            - name: NC_DOMAIN
-              valueFrom:
-                configMapKeyRef:
-                  key: NC_DOMAIN
-                  name: nextcloud-config
-          envFrom:
-            - secretRef:
-                name: nextcloud-secret
-          ports:
-            - containerPort: 7867
-              protocol: TCP
-          volumeMounts:
-            - mountPath: /nextcloud
-              name: nextcloud-aio-nextcloud
-              readOnly: true
-          resources: {}
-      volumes:
-        - name: nextcloud-aio-nextcloud
-          persistentVolumeClaim:
-            claimName: nextcloud-aio-nextcloud-pvc
+            claimName: nextcloud-pvc

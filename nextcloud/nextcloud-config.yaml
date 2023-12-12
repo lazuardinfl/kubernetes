@@ -24,3 +24,5 @@ data:
   POSTGRES_PASSWORD: <postgres_password | base64encode>
   REDIS_HOST: <redis_host | base64encode>
   REDIS_HOST_PASSWORD: <redis_host_password | base64encode>
+  ADMIN_USER: <admin_user | base64encode>
+  ADMIN_PASSWORD: <admin_password | base64encode>

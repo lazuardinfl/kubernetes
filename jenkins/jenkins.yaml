@@ -1,0 +1,169 @@
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: jenkins-admin
+  labels:
+    app.kubernetes.io/name: jenkins
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: jenkins-admin
+  labels:
+    app.kubernetes.io/name: jenkins
+rules:
+  - apiGroups: [""]
+    resources: ["*"]
+    verbs: ["*"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: jenkins-admin
+  labels:
+    app.kubernetes.io/name: jenkins
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: jenkins-admin
+subjects:
+- kind: ServiceAccount
+  name: jenkins-admin
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: jenkins-pvc
+  labels:
+    app.kubernetes.io/name: jenkins
+  annotations:
+    argocd.argoproj.io/sync-options: Delete=false
+spec:
+  storageClassName: openebs-local
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 1G
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: jenkins-service
+  labels:
+    app.kubernetes.io/name: jenkins
+spec:
+  selector: 
+    app: jenkins-server
+  type: NodePort  
+  ports:
+    - port: 8080
+      targetPort: 8080
+      nodePort: 32000
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: jenkins-agent
+  labels:
+    app.kubernetes.io/name: jenkins
+spec:
+  ports:
+    - port: 50000
+      targetPort: 50000
+      name: agent-listener
+  selector:
+    "app.kubernetes.io/component": "jenkins-controller"
+    "app.kubernetes.io/instance": "jenkins"
+  type: ClusterIP
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: jenkins
+  labels:
+    app.kubernetes.io/name: jenkins
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: jenkins-server
+  template:
+    metadata:
+      labels:
+        app: jenkins-server
+    spec:
+      securityContext:
+        fsGroup: 1000 
+        runAsUser: 1000
+      serviceAccountName: jenkins-admin
+      initContainers:
+        - name: init-ca
+          image: jenkins/jenkins:2.426.2-lts-jdk17
+          command: ["sh", "-c"]
+          args:
+          - update-ca-certificates;
+            keytool -cacerts -storepass changeit -noprompt -trustcacerts -importcert -alias customCA -file /usr/local/share/ca-certificates/ca.crt;
+            cp /etc/ssl/certs/ca-certificates.crt /custom-ca/;
+            cp /opt/java/openjdk/lib/security/cacerts /custom-ca/;
+            chmod 644 /custom-ca/ca-certificates.crt;
+            chmod 644 /custom-ca/cacerts;
+          securityContext:
+            runAsUser: 0
+          volumeMounts:
+            - name: tls
+              mountPath: /usr/local/share/ca-certificates/ca.crt
+              subPath: ca.crt
+              readOnly: true
+            - name: ca
+              mountPath: /custom-ca
+      containers:
+        - name: jenkins
+          image: jenkins/jenkins:2.426.2-lts-jdk17
+          env:
+            - name: JAVA_OPTS
+              value: >-
+                 -Dorg.apache.commons.jelly.tags.fmt.timeZone=Asia/Jakarta
+          resources:
+            limits:
+              cpu: 4000m
+              memory: 4Gi
+          ports:
+            - name: httpport
+              containerPort: 8080
+            - name: jnlpport
+              containerPort: 50000
+          livenessProbe:
+            httpGet:
+              path: "/login"
+              port: 8080
+            initialDelaySeconds: 90
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 5
+          readinessProbe:
+            httpGet:
+              path: "/login"
+              port: 8080
+            initialDelaySeconds: 60
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
+          volumeMounts:
+            - mountPath: /etc/ssl/certs/ca-certificates.crt
+              name: ca
+              subPath: ca-certificates.crt
+            - mountPath: /opt/java/openjdk/lib/security/cacerts
+              name: ca
+              subPath: cacerts
+            - mountPath: /var/jenkins_home  
+              name: data
+      volumes:
+        - name: tls
+          secret:
+            secretName: jenkins-tls
+        - name: data
+          persistentVolumeClaim:
+            claimName: jenkins-pvc
+        - name: ca
+          emptyDir: {}

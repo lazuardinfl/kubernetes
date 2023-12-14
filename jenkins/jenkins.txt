@@ -1,0 +1,3 @@
+
+helm template jenkins jenkins/jenkins --insecure-skip-tls-verify > temp.yaml
+helm template jenkins jenkins/jenkins --insecure-skip-tls-verify -f values.yaml > temp1.yaml

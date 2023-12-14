@@ -49,17 +49,17 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  name: jenkins-service
+  name: jenkins
   labels:
     app.kubernetes.io/name: jenkins
 spec:
+  type: ClusterIP
   selector: 
-    app: jenkins-server
-  type: NodePort  
+    app.kubernetes.io/name: jenkins
   ports:
-    - port: 8080
-      targetPort: 8080
-      nodePort: 32000
+  - name: http
+    port: 8080
+    targetPort: http
 ---
 apiVersion: v1
 kind: Service
@@ -68,14 +68,13 @@ metadata:
   labels:
     app.kubernetes.io/name: jenkins
 spec:
-  ports:
-    - port: 50000
-      targetPort: 50000
-      name: agent-listener
-  selector:
-    "app.kubernetes.io/component": "jenkins-controller"
-    "app.kubernetes.io/instance": "jenkins"
   type: ClusterIP
+  selector: 
+    app.kubernetes.io/name: jenkins
+  ports:
+  - name: agent
+    port: 50000
+    targetPort: 50000
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -87,11 +86,11 @@ spec:
   replicas: 1
   selector:
     matchLabels:
-      app: jenkins-server
+      app.kubernetes.io/name: jenkins
   template:
     metadata:
       labels:
-        app: jenkins-server
+        app.kubernetes.io/name: jenkins
     spec:
       securityContext:
         fsGroup: 1000 
@@ -100,6 +99,7 @@ spec:
       initContainers:
         - name: init-ca
           image: jenkins/jenkins:2.426.2-lts-jdk17
+          imagePullPolicy: IfNotPresent
           command: ["sh", "-c"]
           args:
           - update-ca-certificates;
@@ -120,6 +120,7 @@ spec:
       containers:
         - name: jenkins
           image: jenkins/jenkins:2.426.2-lts-jdk17
+          imagePullPolicy: IfNotPresent
           env:
             - name: JAVA_OPTS
               value: >-
@@ -129,14 +130,14 @@ spec:
               cpu: 4000m
               memory: 4Gi
           ports:
-            - name: httpport
+            - name: http
               containerPort: 8080
-            - name: jnlpport
+            - name: agent
               containerPort: 50000
           livenessProbe:
             httpGet:
               path: "/login"
-              port: 8080
+              port: http
             initialDelaySeconds: 90
             periodSeconds: 10
             timeoutSeconds: 5
@@ -144,7 +145,7 @@ spec:
           readinessProbe:
             httpGet:
               path: "/login"
-              port: 8080
+              port: http
             initialDelaySeconds: 60
             periodSeconds: 10
             timeoutSeconds: 5
@@ -156,7 +157,7 @@ spec:
             - mountPath: /opt/java/openjdk/lib/security/cacerts
               name: ca
               subPath: cacerts
-            - mountPath: /var/jenkins_home  
+            - mountPath: /var/jenkins_home
               name: data
       volumes:
         - name: tls
@@ -167,3 +168,41 @@ spec:
             claimName: jenkins-pvc
         - name: ca
           emptyDir: {}
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: jenkins-ingress
+  labels:
+    app.kubernetes.io/name: jenkins
+  annotations:
+    cert-manager.io/cluster-issuer: "org-ca-issuer"
+    cert-manager.io/common-name: "Jenkins"
+    nginx.ingress.kubernetes.io/proxy-body-size: "0"
+    nginx.ingress.kubernetes.io/proxy-max-temp-file-size: "0"
+    nginx.ingress.kubernetes.io/client-body-buffer-size: 128k
+    nginx.ingress.kubernetes.io/proxy-request-buffering: "off"
+    nginx.ingress.kubernetes.io/proxy-connect-timeout: "90"
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "90"
+    nginx.ingress.kubernetes.io/proxy-send-timeout: "90"
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/ssl-prefer-server-ciphers: "false"
+    nginx.ingress.kubernetes.io/server-snippet: |
+      ssl_session_timeout 1d;
+      ignore_invalid_headers off;
+spec:
+  ingressClassName: nginx
+  tls:
+    - hosts:
+        - jenkins.domain.com
+      secretName: jenkins-tls
+  rules:
+  - host: jenkins.domain.com
+    http:
+      paths:
+      - pathType: ImplementationSpecific
+        backend:
+          service:
+            name: jenkins
+            port:
+              name: http

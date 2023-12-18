@@ -1,0 +1,3 @@
+
+export INIT_NAME=init
+export INIT_FILE=https://github.com/argoproj/argo-cd/releases/download/v2.8.5/cli_checksums.txt

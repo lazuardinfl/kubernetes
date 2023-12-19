@@ -1,0 +1,11 @@
+# add password hash type
+dn: olcDatabase={-1}frontend,cn=config
+changetype: modify
+add: olcPasswordHash
+olcPasswordHash: {CRYPT}
+
+# add crypt salt format
+dn: cn=config
+changetype: modify
+add: olcPasswordCryptSaltFormat
+olcPasswordCryptSaltFormat: $5$%.16s

@@ -2,21 +2,35 @@
 dn: olcDatabase={2}mdb,cn=config
 changetype: modify
 # delete acl if exist
-# delete: olcAccess
-# -
+delete: olcAccess
+-
 # add acl
 add: olcAccess
+# super user id
+olcAccess: to filter=(&(objectClass=inetOrgPerson)(memberOf=cn=admin,ou=configs,dc=domain,dc=com)) attrs=entry,uid
+  by group/extensibleObject/member="cn=admin,ou=configs,dc=domain,dc=com" manage
+  by self write
+  by group.exact="cn=users,ou=configs,dc=domain,dc=com" read
+  by dn.children="ou=services,dc=domain,dc=com" read
+  by * none
+# super user password
+olcAccess: to filter=(&(objectClass=inetOrgPerson)(memberOf=cn=admin,ou=configs,dc=domain,dc=com)) attrs=userPassword
+  by group/extensibleObject/member="cn=admin,ou=configs,dc=domain,dc=com" manage
+  by self write
+  by dn.base="uid=keycloak,ou=services,dc=domain,dc=com" =xw
+  by anonymous auth
+  by * none
 # password
 olcAccess: to attrs=userPassword
-  by group.exact="cn=super,ou=configs,dc=domain,dc=com" manage
-  by group.exact="cn=users,ou=configs,dc=domain,dc=com" write
-  by dn.base="uid=keycloak,ou=services,dc=domain,dc=com" write
+  by group/extensibleObject/member="cn=admin,ou=configs,dc=domain,dc=com" manage
   by self write
+  by group.exact="cn=users,ou=configs,dc=domain,dc=com" =xw
+  by dn.base="uid=keycloak,ou=services,dc=domain,dc=com" =xw
   by anonymous auth
   by * none
 # owner and seeAlso
 olcAccess: to attrs=owner,seeAlso
-  by group.exact="cn=super,ou=configs,dc=domain,dc=com" manage
+  by group/extensibleObject/member="cn=admin,ou=configs,dc=domain,dc=com" manage
   by group.exact="cn=groups,ou=configs,dc=domain,dc=com" write
   by set="this/owner & user" write
   by set="this/owner/manager* & user" write
@@ -26,6 +40,7 @@ olcAccess: to attrs=owner,seeAlso
   by * none
 # users
 olcAccess: to dn.children="ou=users,dc=domain,dc=com"
+  by group/extensibleObject/member="cn=admin,ou=configs,dc=domain,dc=com" manage
   by group.exact="cn=users,ou=configs,dc=domain,dc=com" write
   by set="this/seeAlso/owner* & user" write
   by set="this/seeAlso/owner*/secretary* & user" write
@@ -42,8 +57,15 @@ olcAccess: to dn.children="ou=users,dc=domain,dc=com"
   by set="user/manager* & this/seeAlso/manager" read
   by dn.children="ou=services,dc=domain,dc=com" read
   by * break
+# super groups
+olcAccess: to dn.children="ou=groups,dc=domain,dc=com" filter=(cn=super)
+  by group/extensibleObject/member="cn=admin,ou=configs,dc=domain,dc=com" manage
+  by group.exact="cn=groups,ou=configs,dc=domain,dc=com" read
+  by dn.children="ou=services,dc=domain,dc=com" read
+  by * none
 # groups
 olcAccess: to dn.children="ou=groups,dc=domain,dc=com"
+  by group/extensibleObject/member="cn=admin,ou=configs,dc=domain,dc=com" manage
   by group.exact="cn=groups,ou=configs,dc=domain,dc=com" write
   by set="this/owner* & user" write
   by set="this/owner*/secretary* & user" write
@@ -63,10 +85,10 @@ olcAccess: to dn.one="dc=domain,dc=com" attrs=children
   by set="this/seeAlso/member* & user" write
   by * break
 olcAccess: to dn.regex="^([^,]+,)?dc=domain,dc=com$"
-  by group.exact="cn=super,ou=configs,dc=domain,dc=com" manage
+  by group/extensibleObject/member="cn=admin,ou=configs,dc=domain,dc=com" manage
   by users read
 olcAccess: to dn.base="" by * read
 olcAccess: to *
-  by group.exact="cn=super,ou=configs,dc=domain,dc=com" manage
+  by group/extensibleObject/member="cn=admin,ou=configs,dc=domain,dc=com" manage
   by self read
   by * none

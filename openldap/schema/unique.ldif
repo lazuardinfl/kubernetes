@@ -11,3 +11,4 @@ objectClass: olcOverlayConfig
 objectClass: olcUniqueConfig
 olcOverlay: unique
 olcUniqueURI: ldap:///ou=users,dc=domain,dc=com?uid?sub?
+olcUniqueURI: ldap:///ou=users,dc=domain,dc=com?mail?sub?

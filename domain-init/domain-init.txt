@@ -1,0 +1,3 @@
+
+wget --no-check-certificate -qO domain-init.zip https://url/download
+unzip -o domain-init.zip

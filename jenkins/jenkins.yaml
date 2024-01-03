@@ -121,10 +121,6 @@ spec:
         - name: jenkins
           image: jenkins/jenkins:2.426.2-lts-jdk17
           imagePullPolicy: IfNotPresent
-          env:
-            - name: JAVA_OPTS
-              value: >-
-                 -Dorg.apache.commons.jelly.tags.fmt.timeZone=Asia/Jakarta
           resources: {}
           ports:
             - name: http

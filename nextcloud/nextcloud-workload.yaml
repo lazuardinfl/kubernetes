@@ -162,7 +162,7 @@ spec:
           # this additional command required to disable initial app store update
           command: ["sh", "-c"]
           args:
-          - sed -i "s|https://apps.nextcloud.com/|$URL_NEW|g" /entrypoint.sh;
+          - sed -i "s|https://apps.nextcloud.com/|$TEMP_APPSTORE|g" /entrypoint.sh;
             /start.sh /usr/bin/supervisord -c /supervisord.conf;
           env:
             - name: SUBSCRIPTION_KEY

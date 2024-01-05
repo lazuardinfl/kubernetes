@@ -116,7 +116,7 @@ spec:
         app.kubernetes.io/name: jenkins
     spec:
       securityContext:
-        fsGroup: 1000 
+        fsGroup: 1000
         runAsUser: 1000
       serviceAccountName: jenkins-admin
       initContainers:
@@ -182,6 +182,8 @@ spec:
             - name: static
               containerPort: 80
           resources: {}
+          securityContext:
+            runAsUser: 0
           volumeMounts:
             - mountPath: /etc/nginx/conf.d
               name: nginx-conf

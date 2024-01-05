@@ -145,7 +145,6 @@ spec:
         - name: jenkins
           image: jenkins/jenkins:2.426.2-lts-jdk17
           imagePullPolicy: IfNotPresent
-          resources: {}
           ports:
             - name: http
               containerPort: 8080
@@ -167,6 +166,7 @@ spec:
             periodSeconds: 10
             timeoutSeconds: 5
             failureThreshold: 3
+          resources: {}
           volumeMounts:
             - mountPath: /etc/ssl/certs/ca-certificates.crt
               name: ca
@@ -182,9 +182,9 @@ spec:
           ports:
             - name: static
               containerPort: 80
-          resources: {}
           securityContext:
             runAsUser: 0
+          resources: {}
           volumeMounts:
             - mountPath: /etc/nginx/conf.d
               name: nginx-conf

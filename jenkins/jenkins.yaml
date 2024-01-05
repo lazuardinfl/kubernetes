@@ -31,6 +31,26 @@ subjects:
   name: jenkins-admin
 ---
 apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: jenkins-config
+  labels:
+    app.kubernetes.io/name: jenkins
+data:
+  nginx-conf: |-
+    server {
+        listen 80;
+        location /userContent/ {
+            alias /usr/share/nginx/html/;
+            autoindex on;
+            sendfile on;
+            tcp_nopush on;
+            tcp_nodelay on;
+            keepalive_timeout 65;
+        }
+    }
+---
+apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
   name: jenkins-pvc
@@ -60,6 +80,9 @@ spec:
   - name: http
     port: 8080
     targetPort: http
+  - name: static
+    port: 80
+    targetPort: static
 ---
 apiVersion: v1
 kind: Service
@@ -152,7 +175,27 @@ spec:
               subPath: cacerts
             - mountPath: /var/jenkins_home
               name: data
+        - name: nginx
+          image: nginx:1.23.4
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: static
+              containerPort: 80
+          resources: {}
+          volumeMounts:
+            - mountPath: /etc/nginx/conf.d
+              name: nginx-conf
+            - mountPath: /usr/share/nginx/html
+              name: data
+              subPath: userContent
+              readOnly: true
       volumes:
+        - name: nginx-conf
+          configMap:
+            name: jenkins-config
+            items:
+            - key: nginx-conf
+              path: default.conf
         - name: tls
           secret:
             secretName: jenkins-tls
@@ -193,6 +236,13 @@ spec:
   - host: jenkins.domain.com
     http:
       paths:
+      - path: /userContent
+        pathType: Prefix
+        backend:
+          service:
+            name: jenkins
+            port:
+              name: static
       - pathType: ImplementationSpecific
         backend:
           service:

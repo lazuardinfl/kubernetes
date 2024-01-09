@@ -43,7 +43,8 @@ data:
         access_log off;
         location /userContent/ {
             alias /usr/share/nginx/html/;
-            autoindex on;
+            index index.html;
+            autoindex off;
             sendfile on;
             tcp_nopush on;
             tcp_nodelay on;

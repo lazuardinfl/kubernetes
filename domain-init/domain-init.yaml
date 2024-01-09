@@ -31,7 +31,7 @@ data:
         listen 80;
         location /init {
             root ${INIT_NGINX_DIR};
-            autoindex on;
+            autoindex off;
             sendfile on;
             tcp_nopush on;
             tcp_nodelay on;

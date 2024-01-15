@@ -172,6 +172,9 @@ metadata:
     nginx.ingress.kubernetes.io/ssl-prefer-server-ciphers: "false"
     nginx.ingress.kubernetes.io/server-snippet: |
       ssl_session_timeout 1d;
+      location = / {
+          return 302 $scheme://$http_host/realms/org/account;
+      }
 spec:
   ingressClassName: nginx
   tls:
@@ -188,40 +191,6 @@ spec:
     http:
       paths:
       - pathType: ImplementationSpecific 
-        backend:
-          service:
-            name: keycloak
-            port:
-              number: 8443
----
-apiVersion: networking.k8s.io/v1
-kind: Ingress
-metadata:
-  name: keycloak-org-ingress
-  namespace: keycloak
-  labels:
-    app: keycloak
-    app.kubernetes.io/instance: keycloak
-  annotations:
-    nginx.ingress.kubernetes.io/app-root: /realms/org/account
-    nginx.ingress.kubernetes.io/proxy-body-size: "0"
-    nginx.ingress.kubernetes.io/backend-protocol: "HTTPS"
-    nginx.ingress.kubernetes.io/ssl-redirect: "true"
-    nginx.ingress.kubernetes.io/ssl-prefer-server-ciphers: "false"
-    nginx.ingress.kubernetes.io/server-snippet: |
-      ssl_session_timeout 1d;
-spec:
-  ingressClassName: nginx
-  tls:
-    - hosts:
-        - keycloak.domain.com
-      secretName: keycloak-tls
-  rules:
-  - host: keycloak.domain.com
-    http:
-      paths:
-      - path: /
-        pathType: Exact
         backend:
           service:
             name: keycloak

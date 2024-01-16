@@ -1,7 +1,7 @@
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: domain-init-config
+  name: domain-init-env
   labels:
     app.kubernetes.io/name: domain-init
 data:
@@ -12,21 +12,18 @@ data:
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: domain-init-script
+  name: domain-init-config
   labels:
     app.kubernetes.io/name: domain-init
 data:
-  nginx-init.sh: |-
+  download-init: |-
     #!/bin/sh
-
     cd /domain-init
-    
     wget --no-check-certificate -qO domain-init.zip ${INIT_DOWNLOAD}
     unzip -o domain-init.zip
     rm domain-init.zip
     mv domain-init init
-
-    cat <<EOF | tee default.conf
+  nginx-conf: |-
     server {
         listen 80;
         real_ip_header X-Forwarded-For;
@@ -41,10 +38,9 @@ data:
             keepalive_timeout 65;
         }
         location = /${INIT_DOMAIN} {
-            return 302 http://\$host/init/${INIT_DOMAIN}.exe;
+            return 302 http://$host/init/${INIT_DOMAIN}.exe;
         }
     }
-    EOF
 ---
 apiVersion: v1
 kind: Service
@@ -81,35 +77,46 @@ spec:
         - name: initialize
           image: alpine:3.18.5
           imagePullPolicy: IfNotPresent
-          command: ["/usr/local/bin/nginx-init.sh"]
+          command: ["/usr/local/bin/download-init.sh"]
           envFrom:
             - configMapRef:
-                name: domain-init-config
+                name: domain-init-env
           volumeMounts:
-            - name: script
-              mountPath: /usr/local/bin
-            - name: init
-              mountPath: /domain-init
+            - mountPath: /usr/local/bin 
+              name: script
+            - mountPath: /domain-init
+              name: init
       containers:
         - name: domain-init
           image: nginx:1.23.4
           imagePullPolicy: IfNotPresent
+          envFrom:
+            - configMapRef:
+                name: domain-init-env
           ports:
             - name: http
               containerPort: 80
           resources: {}
           volumeMounts:
-            - mountPath: /etc/nginx/conf.d/default.conf
-              name: init
-              subPath: default.conf
+            - mountPath: /etc/nginx/templates
+              name: conf
             - mountPath: /usr/share/nginx/init
               name: init
               subPath: init
       volumes:
         - name: script
           configMap:
-            name: domain-init-script
+            name: domain-init-config
             defaultMode: 110
+            items:
+            - key: download-init
+              path: download-init.sh
+        - name: conf
+          configMap:
+            name: domain-init-config
+            items:
+            - key: nginx-conf
+              path: default.conf.template
         - name: init
           emptyDir: {}
 ---

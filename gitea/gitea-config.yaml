@@ -15,7 +15,9 @@ data:
   cron.update_checker: ENABLED=false
   indexer: ISSUE_INDEXER_TYPE=db
   metrics: ENABLED=false
-  repository: ROOT=/data/git/gitea-repositories
+  repository: |-
+    ROOT=/data/git/gitea-repositories
+    DEFAULT_BRANCH=master
   security: INSTALL_LOCK=true
   server: |-
     APP_DATA_PATH=/data

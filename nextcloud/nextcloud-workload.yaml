@@ -32,7 +32,7 @@ spec:
               subPath: nextcloud
       containers:
         - name: nextcloud-aio-apache
-          image: nextcloud/aio-apache:20231220_153200-latest
+          image: nextcloud/aio-apache:20240117_083657-latest
           imagePullPolicy: IfNotPresent
           env:
             - name: APACHE_MAX_SIZE
@@ -95,7 +95,7 @@ spec:
     spec:
       containers:
         - name: nextcloud-aio-imaginary
-          image: nextcloud/aio-imaginary:20231220_153200-latest
+          image: nextcloud/aio-imaginary:20240117_083657-latest
           imagePullPolicy: IfNotPresent
           env:
             - name: TZ
@@ -157,7 +157,7 @@ spec:
               subPath: nextcloud
       containers:
         - name: nextcloud-aio-nextcloud
-          image: nextcloud/aio-nextcloud:20231220_153200-latest
+          image: nextcloud/aio-nextcloud:20240117_083657-latest
           imagePullPolicy: IfNotPresent
           # this additional command required to disable initial app store update
           command: ["sh", "-c"]

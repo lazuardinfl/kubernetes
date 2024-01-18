@@ -17,6 +17,10 @@ ldapsearch -H ldap://domain.com -D <user dn> -x -w <password> -LLL -b <user dn>
 ldappasswd -H ldap://domain.com -D <user dn> -x -W -S <dn>
 ldapsearch -H ldap://domain.com -D <user dn> -x -W -LLL -b <user dn>
 ldapsearch -H ldaps://domain.com -D <user dn> -x -W -LLL -b <user dn>
+ldapmodify -H ldaps://domain.com -D <config dn> -x -w <password> -f file.ldif
+LDAPTLS_REQCERT=never ldapmodify -H ldaps://domain.com -D <config dn> -x -w <password> -f file.ldif
+
+use LDAPTLS_REQCERT=never to ignore server tls
 
 # acl
 rule:

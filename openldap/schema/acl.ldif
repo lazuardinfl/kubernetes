@@ -6,14 +6,14 @@ delete: olcAccess
 -
 # add acl
 add: olcAccess
-# super user id
+# admin user id
 olcAccess: to filter=(&(objectClass=inetOrgPerson)(memberOf=cn=admin,ou=configs,dc=domain,dc=com)) attrs=entry,uid
   by group/extensibleObject/member="cn=admin,ou=configs,dc=domain,dc=com" manage
   by self write
   by group.exact="cn=users,ou=configs,dc=domain,dc=com" read
   by dn.children="ou=services,dc=domain,dc=com" read
   by * none
-# super user password
+# admin user password
 olcAccess: to filter=(&(objectClass=inetOrgPerson)(memberOf=cn=admin,ou=configs,dc=domain,dc=com)) attrs=userPassword
   by group/extensibleObject/member="cn=admin,ou=configs,dc=domain,dc=com" manage
   by self write
@@ -21,7 +21,7 @@ olcAccess: to filter=(&(objectClass=inetOrgPerson)(memberOf=cn=admin,ou=configs,
   by anonymous auth
   by * none
 # password
-olcAccess: to attrs=userPassword
+olcAccess: to filter=(objectClass=inetOrgPerson) attrs=userPassword
   by group/extensibleObject/member="cn=admin,ou=configs,dc=domain,dc=com" manage
   by self write
   by group.exact="cn=users,ou=configs,dc=domain,dc=com" =xw

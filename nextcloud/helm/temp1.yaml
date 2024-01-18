@@ -151,13 +151,13 @@ spec:
   type: LoadBalancer
   externalTrafficPolicy: Local
   ports:
-    - name: "8000"
-      port: 8000
-      targetPort: 8000
-    - name: 8000-udp
-      port: 8000
+    - name: "11000"
+      port: 11000
+      targetPort: 11000
+    - name: 11000-udp
+      port: 11000
       protocol: UDP
-      targetPort: 8000
+      targetPort: 11000
   selector:
     io.kompose.service: nextcloud-aio-apache
 ---
@@ -309,7 +309,7 @@ spec:
             - name: APACHE_MAX_TIME
               value: "3600"
             - name: APACHE_PORT
-              value: "8000"
+              value: "11000"
             - name: COLLABORA_HOST
               value: nextcloud-aio-collabora
             - name: NC_DOMAIN
@@ -324,12 +324,12 @@ spec:
               value: nextcloud-aio-talk
             - name: TZ
               value: "Asia/Jakarta"
-          image: nextcloud/aio-apache:20231130_081302-latest
+          image: nextcloud/aio-apache:20231220_153200-latest
           name: nextcloud-aio-apache
           ports:
-            - containerPort: 8000
+            - containerPort: 11000
               protocol: TCP
-            - containerPort: 8000
+            - containerPort: 11000
               protocol: UDP
           volumeMounts:
             - mountPath: /var/www/html
@@ -337,7 +337,6 @@ spec:
               readOnly: true
             - mountPath: /mnt/data
               name: nextcloud-aio-apache
-          resources: {}
       volumes:
         - name: nextcloud-aio-nextcloud
           persistentVolumeClaim:
@@ -410,7 +409,7 @@ spec:
               value: nextcloud
             - name: TZ
               value: "Asia/Jakarta"
-          image: nextcloud/aio-postgresql:20231130_081302-latest
+          image: nextcloud/aio-postgresql:20231220_153200-latest
           name: nextcloud-aio-database
           ports:
             - containerPort: 5432
@@ -421,7 +420,6 @@ spec:
               name: nextcloud-aio-database
             - mountPath: /mnt/data
               name: nextcloud-aio-database-dump
-          resources: {}
       terminationGracePeriodSeconds: 1800
       volumes:
         - name: nextcloud-aio-database
@@ -460,7 +458,7 @@ spec:
         - env:
             - name: TZ
               value: "Asia/Jakarta"
-          image: nextcloud/aio-imaginary:20231130_081302-latest
+          image: nextcloud/aio-imaginary:20231220_153200-latest
           name: nextcloud-aio-imaginary
           ports:
             - containerPort: 9000
@@ -469,7 +467,6 @@ spec:
             capabilities:
               add:
                 - SYS_NICE
-          resources: {}
 ---
 # Source: nextcloud-aio-helm-chart/templates/nextcloud-aio-nextcloud-deployment.yaml
 apiVersion: apps/v1
@@ -497,12 +494,12 @@ spec:
         io.kompose.service: nextcloud-aio-nextcloud
     spec:
       initContainers:
-        - name: delete
+        - name: "delete-lost-found"
           image: alpine
           command:
             - rm
             - "-rf"
-            - /nextcloud-aio-nextcloud/lost+found
+            - "/nextcloud-aio-nextcloud/lost+found"
           volumeMounts:
             - name: nextcloud-aio-nextcloud-trusted-cacerts
               mountPath: /nextcloud-aio-nextcloud-trusted-cacerts
@@ -544,6 +541,8 @@ spec:
               value: ""
             - name: ADDITIONAL_TRUSTED_PROXY
               value: ""
+            - name: SERVERINFO_TOKEN
+              value: ""
             - name: ADDITIONAL_APKS
               value: "imagemagick"
             - name: ADDITIONAL_PHP_EXTENSIONS
@@ -553,7 +552,7 @@ spec:
             - name: ADMIN_USER
               value: admin
             - name: APACHE_PORT
-              value: "8000"
+              value: "11000"
             - name: CLAMAV_ENABLED
               value: "no"
             - name: CLAMAV_HOST
@@ -609,7 +608,7 @@ spec:
             - name: REDIS_HOST_PASSWORD
               value: "redis_pass"
             - name: REMOVE_DISABLED_APPS
-              value: "true"
+              value: "false"
             - name: SIGNALING_SECRET
               value: ""
             - name: STARTUP_APPS
@@ -630,7 +629,7 @@ spec:
               value: "Asia/Jakarta"
             - name: UPDATE_NEXTCLOUD_APPS
               value: "false"
-          image: nextcloud/aio-nextcloud:20231130_081302-latest
+          image: nextcloud/aio-nextcloud:20231220_153200-latest
           name: nextcloud-aio-nextcloud
           ports:
             - containerPort: 9000
@@ -645,7 +644,7 @@ spec:
             - mountPath: /usr/local/share/ca-certificates
               name: nextcloud-aio-nextcloud-trusted-cacerts
               readOnly: true
-          resources: {}
+      terminationGracePeriodSeconds: 600
       volumes:
         - name: nextcloud-aio-nextcloud
           persistentVolumeClaim:
@@ -710,7 +709,7 @@ spec:
               value: nextcloud-aio-redis
             - name: REDIS_HOST_PASSWORD
               value: "redis_pass"
-          image: nextcloud/aio-notify-push:20231130_081302-latest
+          image: nextcloud/aio-notify-push:20231220_153200-latest
           name: nextcloud-aio-notify-push
           ports:
             - containerPort: 7867
@@ -719,7 +718,6 @@ spec:
             - mountPath: /nextcloud
               name: nextcloud-aio-nextcloud
               readOnly: true
-          resources: {}
       volumes:
         - name: nextcloud-aio-nextcloud
           persistentVolumeClaim:
@@ -766,7 +764,7 @@ spec:
               value: "redis_pass"
             - name: TZ
               value: "Asia/Jakarta"
-          image: nextcloud/aio-redis:20231130_081302-latest
+          image: nextcloud/aio-redis:20231220_153200-latest
           name: nextcloud-aio-redis
           ports:
             - containerPort: 6379
@@ -774,7 +772,6 @@ spec:
           volumeMounts:
             - mountPath: /data
               name: nextcloud-aio-redis
-          resources: {}
       volumes:
         - name: nextcloud-aio-redis
           persistentVolumeClaim:

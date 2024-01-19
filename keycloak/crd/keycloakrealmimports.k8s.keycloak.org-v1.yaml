@@ -628,6 +628,10 @@ spec:
                     type: string
                   webAuthnPolicyAuthenticatorAttachment:
                     type: string
+                  webAuthnPolicyPasswordlessExtraOrigins:
+                    items:
+                      type: string
+                    type: array
                   actionTokenGeneratedByAdminLifespan:
                     type: integer
                   id:
@@ -1210,8 +1214,12 @@ spec:
                           items:
                             type: string
                           type: array
+                        parentId:
+                          type: string
                         path:
                           type: string
+                        subGroupCount:
+                          type: integer
                         clientRoles:
                           additionalProperties:
                             items:
@@ -1379,6 +1387,10 @@ spec:
                   otpPolicyDigits:
                     type: integer
                   webAuthnPolicyPasswordlessSignatureAlgorithms:
+                    items:
+                      type: string
+                    type: array
+                  webAuthnPolicyExtraOrigins:
                     items:
                       type: string
                     type: array
@@ -1912,6 +1924,12 @@ spec:
                     type: integer
                   webAuthnPolicyPasswordlessRequireResidentKey:
                     type: string
+                  localizationTexts:
+                    additionalProperties:
+                      additionalProperties:
+                        type: string
+                      type: object
+                    type: object
                   waitIncrementSeconds:
                     type: integer
                   protocolMappers:
@@ -2304,10 +2322,10 @@ spec:
               conditions:
                 items:
                   properties:
+                    status:
+                      type: string
                     lastTransitionTime:
                       type: string
-                    status:
-                      x-kubernetes-preserve-unknown-fields: true
                     observedGeneration:
                       type: integer
                     type:

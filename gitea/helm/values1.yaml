@@ -69,8 +69,8 @@ postgresql-ha:
 redis-cluster:
   enabled: false
 
-#service:
-#  http:
-#    type: NodePort
-#    nodePort: 30300
-#    externalTrafficPolicy: Local
+service:
+  ssh:
+    type: NodePort
+    nodePort: 32000
+    externalTrafficPolicy: Local

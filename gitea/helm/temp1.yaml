@@ -5,12 +5,12 @@ kind: Secret
 metadata:
   name: gitea-inline-config
   labels:
-    helm.sh/chart: gitea-9.6.0
+    helm.sh/chart: gitea-10.0.2
     app: gitea
     app.kubernetes.io/name: gitea
     app.kubernetes.io/instance: gitea
-    app.kubernetes.io/version: "1.21.0"
-    version: "1.21.0"
+    app.kubernetes.io/version: "1.21.3"
+    version: "1.21.3"
     app.kubernetes.io/managed-by: Helm
 type: Opaque
 stringData:
@@ -21,11 +21,13 @@ stringData:
     HOST=redis://:password@redis.domain.com:6379/0?pool_size=100&idle_timeout=180s&
   database: |-
     DB_TYPE=postgres
-    NAME=gitea
-    USER=gitea
+    NAME=db_name
+    USER=db_user
   indexer: ISSUE_INDEXER_TYPE=db
   metrics: ENABLED=false
-  queue: TYPE=redis
+  queue: |-
+    CONN_STR=
+    TYPE=redis
   repository: ROOT=/data/git/gitea-repositories
   security: INSTALL_LOCK=true
   server: |-
@@ -49,12 +51,12 @@ kind: Secret
 metadata:
   name: gitea
   labels:
-    helm.sh/chart: gitea-9.6.0
+    helm.sh/chart: gitea-10.0.2
     app: gitea
     app.kubernetes.io/name: gitea
     app.kubernetes.io/instance: gitea
-    app.kubernetes.io/version: "1.21.0"
-    version: "1.21.0"
+    app.kubernetes.io/version: "1.21.3"
+    version: "1.21.3"
     app.kubernetes.io/managed-by: Helm
 type: Opaque
 stringData:
@@ -186,7 +188,7 @@ stringData:
     }
     
     # save existing envs prior to script execution. Necessary to keep order of preexisting and custom envs
-    env | (grep GITEA || [[ $? == 1 ]]) > /tmp/existing-envs
+    env | (grep -e '^GITEA__' || [[ $? == 1 ]]) > /tmp/existing-envs
     
     # MUST BE CALLED BEFORE OTHER CONFIGURATION
     env2ini::generate_initial_secrets
@@ -221,12 +223,12 @@ kind: Secret
 metadata:
   name: gitea-init
   labels:
-    helm.sh/chart: gitea-9.6.0
+    helm.sh/chart: gitea-10.0.2
     app: gitea
     app.kubernetes.io/name: gitea
     app.kubernetes.io/instance: gitea
-    app.kubernetes.io/version: "1.21.0"
-    version: "1.21.0"
+    app.kubernetes.io/version: "1.21.3"
+    version: "1.21.3"
     app.kubernetes.io/managed-by: Helm
 type: Opaque
 stringData:
@@ -265,7 +267,28 @@ stringData:
       exit 1
     }
     function configure_admin_user() {
-      local ACCOUNT_ID=$(gitea admin user list --admin | grep -e "\s\+${GITEA_ADMIN_USERNAME}\s\+" | awk -F " " "{printf \$1}")
+      local full_admin_list=$(gitea admin user list --admin)
+      local actual_user_table=''
+
+      # We might have distorted output due to warning logs, so we have to detect the actual user table by its headline and trim output above that line
+      local regex="(.*)(ID\s+Username\s+Email\s+IsActive.*)"
+      if [[ "${full_admin_list}" =~ $regex ]]; then
+        actual_user_table=$(echo "${BASH_REMATCH[2]}" | tail -n+2) # tail'ing to drop the table headline
+      else
+        # This code block should never be reached, as long as the output table header remains the same.
+        # If this code block is reached, the regex doesn't match anymore and we probably have to adjust this script.
+
+        echo "ERROR: 'configure_admin_user' was not able to determine the current list of admin users."
+        echo "       Please review the output of 'gitea admin user list --admin' shown below."
+        echo "       If you think it is an issue with the Helm Chart provisioning, file an issue at https://gitea.com/gitea/helm-chart/issues."
+        echo "DEBUG: Output of 'gitea admin user list --admin'"
+        echo "--"
+        echo "${full_admin_list}"
+        echo "--"
+        exit 1
+      fi
+
+      local ACCOUNT_ID=$(echo "${actual_user_table}" | grep -E "\s+${GITEA_ADMIN_USERNAME}\s+" | awk -F " " "{printf \$1}")
       if [[ -z "${ACCOUNT_ID}" ]]; then
         echo "No admin user '${GITEA_ADMIN_USERNAME}' found. Creating now..."
         gitea admin user create --admin --username "${GITEA_ADMIN_USERNAME}" --password "${GITEA_ADMIN_PASSWORD}" --email "gitea@local.domain" --must-change-password=false
@@ -316,12 +339,12 @@ kind: Service
 metadata:
   name: gitea-http
   labels:
-    helm.sh/chart: gitea-9.6.0
+    helm.sh/chart: gitea-10.0.2
     app: gitea
     app.kubernetes.io/name: gitea
     app.kubernetes.io/instance: gitea
-    app.kubernetes.io/version: "1.21.0"
-    version: "1.21.0"
+    app.kubernetes.io/version: "1.21.3"
+    version: "1.21.3"
     app.kubernetes.io/managed-by: Helm
   annotations:
     {}
@@ -342,23 +365,24 @@ kind: Service
 metadata:
   name: gitea-ssh
   labels:
-    helm.sh/chart: gitea-9.6.0
+    helm.sh/chart: gitea-10.0.2
     app: gitea
     app.kubernetes.io/name: gitea
     app.kubernetes.io/instance: gitea
-    app.kubernetes.io/version: "1.21.0"
-    version: "1.21.0"
+    app.kubernetes.io/version: "1.21.3"
+    version: "1.21.3"
     app.kubernetes.io/managed-by: Helm
   annotations:
     {}
 spec:
-  type: ClusterIP
-  clusterIP: None
+  type: NodePort
+  externalTrafficPolicy: Local
   ports:
   - name: ssh
     port: 22
     targetPort: 2222
     protocol: TCP
+    nodePort: 32000
   selector:
     app.kubernetes.io/name: gitea
     app.kubernetes.io/instance: gitea
@@ -368,13 +392,14 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: gitea
+  annotations:
   labels:
-    helm.sh/chart: gitea-9.6.0
+    helm.sh/chart: gitea-10.0.2
     app: gitea
     app.kubernetes.io/name: gitea
     app.kubernetes.io/instance: gitea
-    app.kubernetes.io/version: "1.21.0"
-    version: "1.21.0"
+    app.kubernetes.io/version: "1.21.3"
+    version: "1.21.3"
     app.kubernetes.io/managed-by: Helm
 spec:
   replicas: 1
@@ -390,14 +415,14 @@ spec:
   template:
     metadata:
       annotations:
-        checksum/config: fa1eb32475f4758cfdecda989adaa7550ab85d95ed1a344e8bcb83ef25c31d1f
+        checksum/config: d3d804608b2616852dddb8fb24e51540141bc29aca5e021a9b5e971c2c44fabd
       labels:
-        helm.sh/chart: gitea-9.6.0
+        helm.sh/chart: gitea-10.0.2
         app: gitea
         app.kubernetes.io/name: gitea
         app.kubernetes.io/instance: gitea
-        app.kubernetes.io/version: "1.21.0"
-        version: "1.21.0"
+        app.kubernetes.io/version: "1.21.3"
+        version: "1.21.3"
         app.kubernetes.io/managed-by: Helm
     spec:
       
@@ -405,7 +430,7 @@ spec:
         fsGroup: 1000
       initContainers:
         - name: init-directories
-          image: "gitea/gitea:1.21.0-rootless"
+          image: "gitea/gitea:1.21.3-rootless"
           imagePullPolicy: IfNotPresent
           command: ["/usr/sbin/init_directory_structure.sh"]
           env:
@@ -433,7 +458,7 @@ spec:
               cpu: 100m
               memory: 128Mi
         - name: init-app-ini
-          image: "gitea/gitea:1.21.0-rootless"
+          image: "gitea/gitea:1.21.3-rootless"
           imagePullPolicy: IfNotPresent
           command: ["/usr/sbin/config_environment.sh"]
           env:
@@ -477,7 +502,7 @@ spec:
               cpu: 100m
               memory: 128Mi
         - name: configure-gitea
-          image: "gitea/gitea:1.21.0-rootless"
+          image: "gitea/gitea:1.21.3-rootless"
           command: ["/usr/sbin/configure_gitea.sh"]
           imagePullPolicy: IfNotPresent
           securityContext:
@@ -519,7 +544,7 @@ spec:
       terminationGracePeriodSeconds: 60
       containers:
         - name: gitea
-          image: "gitea/gitea:1.21.0-rootless"
+          image: "gitea/gitea:1.21.3-rootless"
           imagePullPolicy: IfNotPresent
           env:
             # SSH Port values have to be set here as well for openssh configuration
@@ -571,7 +596,7 @@ spec:
               mountPath: /data
             
       nodeSelector:
-        kubernetes.io/hostname: rpa-node2
+        kubernetes.io/hostname: node-name
       volumes:
         - name: init
           secret:
@@ -602,12 +627,12 @@ kind: Ingress
 metadata:
   name: gitea
   labels:
-    helm.sh/chart: gitea-9.6.0
+    helm.sh/chart: gitea-10.0.2
     app: gitea
     app.kubernetes.io/name: gitea
     app.kubernetes.io/instance: gitea
-    app.kubernetes.io/version: "1.21.0"
-    version: "1.21.0"
+    app.kubernetes.io/version: "1.21.3"
+    version: "1.21.3"
     app.kubernetes.io/managed-by: Helm
   annotations:
       cert-manager.io/cluster-issuer: "domain-ca-issuer"
@@ -622,3 +647,27 @@ spec:
     - host: "hub.domain.com"
       http:
         paths:
+---
+# Source: gitea/templates/tests/test-http-connection.yaml
+apiVersion: v1
+kind: Pod
+metadata:
+  name: "gitea-test-connection"
+  labels:
+
+    helm.sh/chart: gitea-10.0.2
+    app: gitea
+    app.kubernetes.io/name: gitea
+    app.kubernetes.io/instance: gitea
+    app.kubernetes.io/version: "1.21.3"
+    version: "1.21.3"
+    app.kubernetes.io/managed-by: Helm
+  annotations:
+    "helm.sh/hook": test-success
+spec:
+  containers:
+    - name: wget
+      image: "busybox:latest"
+      command: ['wget']
+      args:  ['gitea-http:3000']
+  restartPolicy: Never

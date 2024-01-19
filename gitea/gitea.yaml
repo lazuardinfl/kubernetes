@@ -25,17 +25,17 @@ metadata:
     app: gitea
     app.kubernetes.io/name: gitea
     app.kubernetes.io/instance: gitea
-    app.kubernetes.io/version: "1.21.3"
-    version: "1.21.3"
+    app.kubernetes.io/version: "1.21.4"
+    version: "1.21.4"
 spec:
   type: ClusterIP
-  selector:
-    app.kubernetes.io/name: gitea
-    app.kubernetes.io/instance: gitea
   ports:
   - name: http
     port: 3000
     targetPort: 3000
+  selector:
+    app.kubernetes.io/name: gitea
+    app.kubernetes.io/instance: gitea
 ---
 apiVersion: v1
 kind: Service
@@ -46,18 +46,20 @@ metadata:
     app: gitea
     app.kubernetes.io/name: gitea
     app.kubernetes.io/instance: gitea
-    app.kubernetes.io/version: "1.21.3"
-    version: "1.21.3"
+    app.kubernetes.io/version: "1.21.4"
+    version: "1.21.4"
 spec:
-  type: ClusterIP
-  selector:
-    app.kubernetes.io/name: gitea
-    app.kubernetes.io/instance: gitea
+  type: NodePort
+  externalTrafficPolicy: Local
   ports:
   - name: ssh
     port: 22
     targetPort: 2222
     protocol: TCP
+    nodePort: 32000
+  selector:
+    app.kubernetes.io/name: gitea
+    app.kubernetes.io/instance: gitea
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -68,8 +70,8 @@ metadata:
     app: gitea
     app.kubernetes.io/name: gitea
     app.kubernetes.io/instance: gitea
-    app.kubernetes.io/version: "1.21.3"
-    version: "1.21.3"
+    app.kubernetes.io/version: "1.21.4"
+    version: "1.21.4"
 spec:
   replicas: 1
   strategy:
@@ -87,14 +89,14 @@ spec:
         app: gitea
         app.kubernetes.io/name: gitea
         app.kubernetes.io/instance: gitea
-        app.kubernetes.io/version: "1.21.3"
-        version: "1.21.3"
+        app.kubernetes.io/version: "1.21.4"
+        version: "1.21.4"
     spec:
       securityContext:
         fsGroup: 1000
       initContainers:
         - name: init-directories
-          image: gitea/gitea:1.21.3-rootless
+          image: gitea/gitea:1.21.4-rootless
           imagePullPolicy: IfNotPresent
           command: ["/usr/sbin/init_directory_structure.sh"]
           env:
@@ -118,7 +120,7 @@ spec:
               cpu: 100m
               memory: 128Mi
         - name: init-app-ini
-          image: gitea/gitea:1.21.3-rootless
+          image: gitea/gitea:1.21.4-rootless
           imagePullPolicy: IfNotPresent
           command: ["/usr/sbin/config_environment.sh"]
           env:
@@ -147,7 +149,7 @@ spec:
               cpu: 100m
               memory: 128Mi
         - name: configure-gitea
-          image: gitea/gitea:1.21.3-rootless
+          image: gitea/gitea:1.21.4-rootless
           command: ["/usr/sbin/configure_gitea.sh"]
           imagePullPolicy: IfNotPresent
           securityContext:
@@ -187,7 +189,7 @@ spec:
       terminationGracePeriodSeconds: 60
       containers:
         - name: gitea
-          image: gitea/gitea:1.21.3-rootless
+          image: gitea/gitea:1.21.4-rootless
           imagePullPolicy: IfNotPresent
           env:
             - name: SSH_LISTEN_PORT
@@ -260,8 +262,8 @@ metadata:
     app: gitea
     app.kubernetes.io/name: gitea
     app.kubernetes.io/instance: gitea
-    app.kubernetes.io/version: "1.21.3"
-    version: "1.21.3"
+    app.kubernetes.io/version: "1.21.4"
+    version: "1.21.4"
   annotations:
     cert-manager.io/cluster-issuer: "org-ca-issuer"
     cert-manager.io/common-name: "Gitea"

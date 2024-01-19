@@ -12,25 +12,25 @@ data:
     connectors:
       - type: ldap
         id: openldap
-        name: "OpenLDAP"
+        name: SSO
         config:
-          host: openldap.domain.com
+          host: $dex.ldap.host
           insecureNoSSL: true
           insecureSkipVerify: true
           startTLS: false
           bindDN: $dex.ldap.bindDN
           bindPW: $dex.ldap.bindPW
           userSearch:
-            baseDN: "ou=users,dc=domain,dc=com"
-            filter: "(objectClass=inetOrgPerson)"
+            baseDN: $dex.ldap.userSearch.baseDN
+            filter: $dex.ldap.userSearch.filter
             username: uid
             idAttr: uid
             emailAttr: mail
             nameAttr: cn
             preferredUsernameAttr: sn
           groupSearch:
-            baseDN: "ou=groups,dc=domain,dc=com"
-            filter: "(&(objectClass=groupOfURLs)(|(ou:dn:=argocd)(ou:dn:=OU1)))"
+            baseDN: $dex.ldap.groupSearch.baseDN
+            filter: $dex.ldap.groupSearch.filter
             userMatchers:
             - userAttr: DN
               groupAttr: member
@@ -180,8 +180,13 @@ metadata:
 type: Opaque
 data:
   redis.password: secret
+  dex.ldap.host: openldap.domain.com
   dex.ldap.bindDN: uid=argocd,ou=users,dc=domain,dc=com
   dex.ldap.bindPW: secret
+  dex.ldap.userSearch.baseDN: ou=users,dc=domain,dc=com
+  dex.ldap.userSearch.filter: (objectClass=inetOrgPerson)
+  dex.ldap.groupSearch.baseDN: ou=groups,dc=domain,dc=com
+  dex.ldap.groupSearch.filter: (&(objectClass=groupOfURLs)(|(ou:dn:=argocd)(ou:dn:=OU1)))
 ---
 apiVersion: v1
 kind: Secret

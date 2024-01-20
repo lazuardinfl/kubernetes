@@ -55,6 +55,10 @@ data:
             tcp_nopush on;
             tcp_nodelay on;
             keepalive_timeout 65;
+            if ($uri ~* "\.(html)$") {
+                add_header Cache-Control "no-cache, no-store, must-revalidate";
+                expires 0;
+            }
         }
     }
 ---

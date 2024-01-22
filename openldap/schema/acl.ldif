@@ -6,25 +6,33 @@ delete: olcAccess
 -
 # add acl
 add: olcAccess
-# admin user id
+# admin id
 olcAccess: to filter=(&(objectClass=inetOrgPerson)(memberOf=cn=admin,ou=configs,dc=domain,dc=com)) attrs=entry,uid
   by group/extensibleObject/member="cn=admin,ou=configs,dc=domain,dc=com" manage
   by self write
   by group.exact="cn=users,ou=configs,dc=domain,dc=com" read
   by dn.children="ou=services,dc=domain,dc=com" read
   by * none
-# admin user password
+# admin password
 olcAccess: to filter=(&(objectClass=inetOrgPerson)(memberOf=cn=admin,ou=configs,dc=domain,dc=com)) attrs=userPassword
   by group/extensibleObject/member="cn=admin,ou=configs,dc=domain,dc=com" manage
   by self write
   by dn.base="uid=keycloak,ou=services,dc=domain,dc=com" =xw
   by anonymous auth
   by * none
-# password
+# password person
 olcAccess: to filter=(objectClass=inetOrgPerson) attrs=userPassword
   by group/extensibleObject/member="cn=admin,ou=configs,dc=domain,dc=com" manage
   by self write
   by group.exact="cn=users,ou=configs,dc=domain,dc=com" =xw
+  by dn.base="uid=keycloak,ou=services,dc=domain,dc=com" =xw
+  by anonymous auth
+  by * none
+# password device
+olcAccess: to filter=(objectClass=device) attrs=userPassword
+  by group/extensibleObject/member="cn=admin,ou=configs,dc=domain,dc=com" manage
+  by group.exact="cn=users,ou=configs,dc=domain,dc=com" write
+  by self write
   by dn.base="uid=keycloak,ou=services,dc=domain,dc=com" =xw
   by anonymous auth
   by * none

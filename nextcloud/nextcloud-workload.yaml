@@ -32,7 +32,7 @@ spec:
               subPath: nextcloud
       containers:
         - name: nextcloud-aio-apache
-          image: nextcloud/aio-apache:20240117_083657-latest
+          image: nextcloud/aio-apache:20240124_105749-latest
           imagePullPolicy: IfNotPresent
           env:
             - name: APACHE_MAX_SIZE
@@ -95,7 +95,7 @@ spec:
     spec:
       containers:
         - name: nextcloud-aio-imaginary
-          image: nextcloud/aio-imaginary:20240117_083657-latest
+          image: nextcloud/aio-imaginary:20240124_105749-latest
           imagePullPolicy: IfNotPresent
           env:
             - name: TZ
@@ -157,7 +157,7 @@ spec:
               subPath: nextcloud
       containers:
         - name: nextcloud-aio-nextcloud
-          image: nextcloud/aio-nextcloud:20240117_083657-latest
+          image: nextcloud/aio-nextcloud:20240124_105749-latest
           imagePullPolicy: IfNotPresent
           # this additional command required to disable initial app store update
           command: ["sh", "-c"]
@@ -165,11 +165,29 @@ spec:
           - sed -i "s|https://apps.nextcloud.com/|$TEMP_APPSTORE|g" /entrypoint.sh;
             /start.sh /usr/bin/supervisord -c /supervisord.conf;
           env:
+            - name: SMTP_HOST
+              value: ""
+            - name: SMTP_SECURE
+              value: ""
+            - name: SMTP_PORT
+              value: ""
+            - name: SMTP_AUTHTYPE
+              value: ""
+            - name: SMTP_NAME
+              value: ""
+            - name: SMTP_PASSWORD
+              value: ""
+            - name: MAIL_FROM_ADDRESS
+              value: ""
+            - name: MAIL_DOMAIN
+              value: ""
             - name: SUBSCRIPTION_KEY
               value: ""
             - name: APPS_ALLOWLIST
               value: ""
             - name: ADDITIONAL_TRUSTED_PROXY
+              value: ""
+            - name: SERVERINFO_TOKEN
               value: ""
             - name: ADDITIONAL_APKS
               value: ""

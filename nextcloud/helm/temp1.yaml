@@ -5,7 +5,6 @@ kind: Namespace
 metadata:
   name: nextcloud
   namespace: nextcloud
-spec: {}
 ---
 # Source: nextcloud-aio-helm-chart/templates/nextcloud-aio-apache-persistentvolumeclaim.yaml
 apiVersion: v1
@@ -141,7 +140,7 @@ kind: Service
 metadata:
   annotations:
     kompose.cmd: kompose convert -c -f latest.yml --namespace nextcloud
-    kompose.version: 1.31.2 (a92241f79)
+    kompose.version: 1.32.0 (765fde254)
   labels:
     io.kompose.service: nextcloud-aio-apache
   name: nextcloud-aio-apache
@@ -167,7 +166,7 @@ kind: Service
 metadata:
   annotations:
     kompose.cmd: kompose convert -c -f latest.yml --namespace nextcloud
-    kompose.version: 1.31.2 (a92241f79)
+    kompose.version: 1.32.0 (765fde254)
   labels:
     io.kompose.service: nextcloud-aio-database
   name: nextcloud-aio-database
@@ -187,7 +186,7 @@ kind: Service
 metadata:
   annotations:
     kompose.cmd: kompose convert -c -f latest.yml --namespace nextcloud
-    kompose.version: 1.31.2 (a92241f79)
+    kompose.version: 1.32.0 (765fde254)
   labels:
     io.kompose.service: nextcloud-aio-imaginary
   name: nextcloud-aio-imaginary
@@ -207,7 +206,7 @@ kind: Service
 metadata:
   annotations:
     kompose.cmd: kompose convert -c -f latest.yml --namespace nextcloud
-    kompose.version: 1.31.2 (a92241f79)
+    kompose.version: 1.32.0 (765fde254)
   labels:
     io.kompose.service: nextcloud-aio-nextcloud
   name: nextcloud-aio-nextcloud
@@ -230,7 +229,7 @@ kind: Service
 metadata:
   annotations:
     kompose.cmd: kompose convert -c -f latest.yml --namespace nextcloud
-    kompose.version: 1.31.2 (a92241f79)
+    kompose.version: 1.32.0 (765fde254)
   labels:
     io.kompose.service: nextcloud-aio-notify-push
   name: nextcloud-aio-notify-push
@@ -250,7 +249,7 @@ kind: Service
 metadata:
   annotations:
     kompose.cmd: kompose convert -c -f latest.yml --namespace nextcloud
-    kompose.version: 1.31.2 (a92241f79)
+    kompose.version: 1.32.0 (765fde254)
   labels:
     io.kompose.service: nextcloud-aio-redis
   name: nextcloud-aio-redis
@@ -270,7 +269,7 @@ kind: Deployment
 metadata:
   annotations:
     kompose.cmd: kompose convert -c -f latest.yml --namespace nextcloud
-    kompose.version: 1.31.2 (a92241f79)
+    kompose.version: 1.32.0 (765fde254)
   labels:
     io.kompose.service: nextcloud-aio-apache
   name: nextcloud-aio-apache
@@ -284,7 +283,7 @@ spec:
     metadata:
       annotations:
         kompose.cmd: kompose convert -c -f latest.yml --namespace nextcloud
-        kompose.version: 1.31.2 (a92241f79)
+        kompose.version: 1.32.0 (765fde254)
       labels:
         io.kompose.network/nextcloud-aio: "true"
         io.kompose.service: nextcloud-aio-apache
@@ -324,7 +323,7 @@ spec:
               value: nextcloud-aio-talk
             - name: TZ
               value: "Asia/Jakarta"
-          image: nextcloud/aio-apache:20231220_153200-latest
+          image: nextcloud/aio-apache:20240124_105749-latest
           name: nextcloud-aio-apache
           ports:
             - containerPort: 11000
@@ -351,7 +350,7 @@ kind: Deployment
 metadata:
   annotations:
     kompose.cmd: kompose convert -c -f latest.yml --namespace nextcloud
-    kompose.version: 1.31.2 (a92241f79)
+    kompose.version: 1.32.0 (765fde254)
   labels:
     io.kompose.service: nextcloud-aio-database
   name: nextcloud-aio-database
@@ -365,7 +364,7 @@ spec:
     metadata:
       annotations:
         kompose.cmd: kompose convert -c -f latest.yml --namespace nextcloud
-        kompose.version: 1.31.2 (a92241f79)
+        kompose.version: 1.32.0 (765fde254)
       labels:
         io.kompose.network/nextcloud-aio: "true"
         io.kompose.service: nextcloud-aio-database
@@ -409,7 +408,7 @@ spec:
               value: nextcloud
             - name: TZ
               value: "Asia/Jakarta"
-          image: nextcloud/aio-postgresql:20231220_153200-latest
+          image: nextcloud/aio-postgresql:20240124_105749-latest
           name: nextcloud-aio-database
           ports:
             - containerPort: 5432
@@ -435,7 +434,7 @@ kind: Deployment
 metadata:
   annotations:
     kompose.cmd: kompose convert -c -f latest.yml --namespace nextcloud
-    kompose.version: 1.31.2 (a92241f79)
+    kompose.version: 1.32.0 (765fde254)
   labels:
     io.kompose.service: nextcloud-aio-imaginary
   name: nextcloud-aio-imaginary
@@ -449,7 +448,7 @@ spec:
     metadata:
       annotations:
         kompose.cmd: kompose convert -c -f latest.yml --namespace nextcloud
-        kompose.version: 1.31.2 (a92241f79)
+        kompose.version: 1.32.0 (765fde254)
       labels:
         io.kompose.network/nextcloud-aio: "true"
         io.kompose.service: nextcloud-aio-imaginary
@@ -458,7 +457,7 @@ spec:
         - env:
             - name: TZ
               value: "Asia/Jakarta"
-          image: nextcloud/aio-imaginary:20231220_153200-latest
+          image: nextcloud/aio-imaginary:20240124_105749-latest
           name: nextcloud-aio-imaginary
           ports:
             - containerPort: 9000
@@ -474,7 +473,7 @@ kind: Deployment
 metadata:
   annotations:
     kompose.cmd: kompose convert -c -f latest.yml --namespace nextcloud
-    kompose.version: 1.31.2 (a92241f79)
+    kompose.version: 1.32.0 (765fde254)
   labels:
     io.kompose.service: nextcloud-aio-nextcloud
   name: nextcloud-aio-nextcloud
@@ -488,7 +487,7 @@ spec:
     metadata:
       annotations:
         kompose.cmd: kompose convert -c -f latest.yml --namespace nextcloud
-        kompose.version: 1.31.2 (a92241f79)
+        kompose.version: 1.32.0 (765fde254)
       labels:
         io.kompose.network/nextcloud-aio: "true"
         io.kompose.service: nextcloud-aio-nextcloud
@@ -629,7 +628,7 @@ spec:
               value: "Asia/Jakarta"
             - name: UPDATE_NEXTCLOUD_APPS
               value: "false"
-          image: nextcloud/aio-nextcloud:20231220_153200-latest
+          image: nextcloud/aio-nextcloud:20240124_105749-latest
           name: nextcloud-aio-nextcloud
           ports:
             - containerPort: 9000
@@ -662,7 +661,7 @@ kind: Deployment
 metadata:
   annotations:
     kompose.cmd: kompose convert -c -f latest.yml --namespace nextcloud
-    kompose.version: 1.31.2 (a92241f79)
+    kompose.version: 1.32.0 (765fde254)
   labels:
     io.kompose.service: nextcloud-aio-notify-push
   name: nextcloud-aio-notify-push
@@ -676,7 +675,7 @@ spec:
     metadata:
       annotations:
         kompose.cmd: kompose convert -c -f latest.yml --namespace nextcloud
-        kompose.version: 1.31.2 (a92241f79)
+        kompose.version: 1.32.0 (765fde254)
       labels:
         io.kompose.network/nextcloud-aio: "true"
         io.kompose.service: nextcloud-aio-notify-push
@@ -709,7 +708,7 @@ spec:
               value: nextcloud-aio-redis
             - name: REDIS_HOST_PASSWORD
               value: "redis_pass"
-          image: nextcloud/aio-notify-push:20231220_153200-latest
+          image: nextcloud/aio-notify-push:20240124_105749-latest
           name: nextcloud-aio-notify-push
           ports:
             - containerPort: 7867
@@ -729,7 +728,7 @@ kind: Deployment
 metadata:
   annotations:
     kompose.cmd: kompose convert -c -f latest.yml --namespace nextcloud
-    kompose.version: 1.31.2 (a92241f79)
+    kompose.version: 1.32.0 (765fde254)
   labels:
     io.kompose.service: nextcloud-aio-redis
   name: nextcloud-aio-redis
@@ -743,7 +742,7 @@ spec:
     metadata:
       annotations:
         kompose.cmd: kompose convert -c -f latest.yml --namespace nextcloud
-        kompose.version: 1.31.2 (a92241f79)
+        kompose.version: 1.32.0 (765fde254)
       labels:
         io.kompose.network/nextcloud-aio: "true"
         io.kompose.service: nextcloud-aio-redis
@@ -764,7 +763,7 @@ spec:
               value: "redis_pass"
             - name: TZ
               value: "Asia/Jakarta"
-          image: nextcloud/aio-redis:20231220_153200-latest
+          image: nextcloud/aio-redis:20240124_105749-latest
           name: nextcloud-aio-redis
           ports:
             - containerPort: 6379

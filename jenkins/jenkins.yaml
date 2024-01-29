@@ -133,7 +133,7 @@ spec:
       serviceAccountName: jenkins-admin
       initContainers:
         - name: init-ca
-          image: jenkins/jenkins:2.426.2-lts-jdk17
+          image: jenkins/jenkins:2.426.3-lts-jdk17
           imagePullPolicy: IfNotPresent
           command: ["sh", "-c"]
           args:
@@ -154,7 +154,7 @@ spec:
               mountPath: /custom-ca
       containers:
         - name: jenkins
-          image: jenkins/jenkins:2.426.2-lts-jdk17
+          image: jenkins/jenkins:2.426.3-lts-jdk17
           imagePullPolicy: IfNotPresent
           ports:
             - name: http

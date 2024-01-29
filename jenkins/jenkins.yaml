@@ -54,7 +54,6 @@ data:
             sendfile on;
             tcp_nopush on;
             tcp_nodelay on;
-            keepalive_timeout 65;
             if ($uri ~* "\.(html)$") {
                 add_header Cache-Control "no-cache, no-store, must-revalidate";
                 expires 0;
@@ -240,6 +239,9 @@ metadata:
     nginx.ingress.kubernetes.io/server-snippet: |
       ssl_session_timeout 1d;
       ignore_invalid_headers off;
+      location = /favicon.ico {
+          return 302 $scheme://$http_host/path/to/favicon.ico;
+      }
 spec:
   ingressClassName: nginx
   tls:

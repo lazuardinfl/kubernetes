@@ -111,7 +111,7 @@ spec:
         envFrom:
         - secretRef:
             name: keycloak-secret
-        image: quay.io/keycloak/keycloak:23.0.4
+        image: quay.io/keycloak/keycloak:23.0.5
         imagePullPolicy: Always
         ports:
         - containerPort: 8443

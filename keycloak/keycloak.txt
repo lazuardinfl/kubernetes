@@ -1,0 +1,4 @@
+
+official keycloak deployment uses operator but you can bypass that:
+- deploy using operator
+- make your own template based on resources created by operator

@@ -323,7 +323,7 @@ spec:
               value: nextcloud-aio-talk
             - name: TZ
               value: "Asia/Jakarta"
-          image: nextcloud/aio-apache:20240124_105749-latest
+          image: nextcloud/aio-apache:20240201_120631-latest
           name: nextcloud-aio-apache
           ports:
             - containerPort: 11000
@@ -408,7 +408,7 @@ spec:
               value: nextcloud
             - name: TZ
               value: "Asia/Jakarta"
-          image: nextcloud/aio-postgresql:20240124_105749-latest
+          image: nextcloud/aio-postgresql:20240201_120631-latest
           name: nextcloud-aio-database
           ports:
             - containerPort: 5432
@@ -457,7 +457,7 @@ spec:
         - env:
             - name: TZ
               value: "Asia/Jakarta"
-          image: nextcloud/aio-imaginary:20240124_105749-latest
+          image: nextcloud/aio-imaginary:20240201_120631-latest
           name: nextcloud-aio-imaginary
           ports:
             - containerPort: 9000
@@ -628,7 +628,7 @@ spec:
               value: "Asia/Jakarta"
             - name: UPDATE_NEXTCLOUD_APPS
               value: "false"
-          image: nextcloud/aio-nextcloud:20240124_105749-latest
+          image: nextcloud/aio-nextcloud:20240201_120631-latest
           name: nextcloud-aio-nextcloud
           ports:
             - containerPort: 9000
@@ -708,7 +708,7 @@ spec:
               value: nextcloud-aio-redis
             - name: REDIS_HOST_PASSWORD
               value: "redis_pass"
-          image: nextcloud/aio-notify-push:20240124_105749-latest
+          image: nextcloud/aio-notify-push:20240201_120631-latest
           name: nextcloud-aio-notify-push
           ports:
             - containerPort: 7867
@@ -763,7 +763,7 @@ spec:
               value: "redis_pass"
             - name: TZ
               value: "Asia/Jakarta"
-          image: nextcloud/aio-redis:20240124_105749-latest
+          image: nextcloud/aio-redis:20240201_120631-latest
           name: nextcloud-aio-redis
           ports:
             - containerPort: 6379

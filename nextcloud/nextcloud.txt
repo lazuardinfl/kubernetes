@@ -1,6 +1,7 @@
 
 helm template nextcloud nextcloud-aio/nextcloud-aio-helm-chart --insecure-skip-tls-verify -n nextcloud > temp.yaml
 helm template nextcloud nextcloud-aio/nextcloud-aio-helm-chart --insecure-skip-tls-verify -n nextcloud -f values1.yaml > temp1.yaml
+helm template nextcloud nextcloud-aio/nextcloud-aio-helm-chart -n nextcloud -f values1.yaml > temp2.yaml
 
 login as super user
 CREATE USER oc_nextcloud WITH PASSWORD '<pass>';

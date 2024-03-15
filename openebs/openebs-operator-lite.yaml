@@ -44,6 +44,9 @@ rules:
 - apiGroups: ["openebs.io"]
   resources: [ "*"]
   verbs: ["*"]
+- apiGroups: ["coordination.k8s.io"]
+  resources: ["leases"]
+  verbs: ["get", "create", "update"]
 - nonResourceURLs: ["/metrics"]
   verbs: ["get"]
 ---
@@ -503,7 +506,7 @@ metadata:
   labels:
     name: openebs-ndm
     openebs.io/component-name: ndm
-    openebs.io/version: 3.4.0
+    openebs.io/version: 3.5.0
 spec:
   selector:
     matchLabels:
@@ -516,7 +519,7 @@ spec:
       labels:
         name: openebs-ndm
         openebs.io/component-name: ndm
-        openebs.io/version: 3.4.0
+        openebs.io/version: 3.5.0
     spec:
       # By default the node-disk-manager will be run on all kubernetes nodes
       # If you would like to limit this to only some nodes, say the nodes
@@ -636,7 +639,7 @@ metadata:
   labels:
     name: openebs-ndm-operator
     openebs.io/component-name: ndm-operator
-    openebs.io/version: 3.4.0
+    openebs.io/version: 3.5.0
 spec:
   selector:
     matchLabels:
@@ -650,7 +653,7 @@ spec:
       labels:
         name: openebs-ndm-operator
         openebs.io/component-name: ndm-operator
-        openebs.io/version: 3.4.0
+        openebs.io/version: 3.5.0
     spec:
       serviceAccountName: openebs-maya-operator
       containers:
@@ -674,7 +677,7 @@ spec:
             - name: OPERATOR_NAME
               value: "node-disk-operator"
             - name: CLEANUP_JOB_IMAGE
-              value: "openebs/linux-utils:3.4.0"
+              value: "openebs/linux-utils:3.5.0"
             # OPENEBS_IO_IMAGE_PULL_SECRETS environment variable is used to pass the image pull secrets
             # to the cleanup pod launched by NDM operator
             #- name: OPENEBS_IO_IMAGE_PULL_SECRETS
@@ -704,7 +707,7 @@ metadata:
   labels:
     name: openebs-ndm-cluster-exporter
     openebs.io/component-name: ndm-cluster-exporter
-    openebs.io/version: 3.4.0
+    openebs.io/version: 3.5.0
 spec:
   replicas: 1
   strategy:
@@ -718,7 +721,7 @@ spec:
       labels:
         name: openebs-ndm-cluster-exporter
         openebs.io/component-name: ndm-cluster-exporter
-        openebs.io/version: 3.4.0
+        openebs.io/version: 3.5.0
     spec:
       serviceAccountName: openebs-maya-operator
       containers:
@@ -777,7 +780,7 @@ metadata:
   labels:
     name: openebs-ndm-node-exporter
     openebs.io/component-name: ndm-node-exporter
-    openebs.io/version: 3.4.0
+    openebs.io/version: 3.5.0
 spec:
   updateStrategy:
     type: RollingUpdate
@@ -790,7 +793,7 @@ spec:
       labels:
         name: openebs-ndm-node-exporter
         openebs.io/component-name: ndm-node-exporter
-        openebs.io/version: 3.4.0
+        openebs.io/version: 3.5.0
     spec:
       serviceAccountName: openebs-maya-operator
       containers:
@@ -848,7 +851,7 @@ metadata:
   labels:
     name: openebs-localpv-provisioner
     openebs.io/component-name: openebs-localpv-provisioner
-    openebs.io/version: 3.4.0
+    openebs.io/version: 3.5.0
 spec:
   selector:
     matchLabels:
@@ -862,13 +865,13 @@ spec:
       labels:
         name: openebs-localpv-provisioner
         openebs.io/component-name: openebs-localpv-provisioner
-        openebs.io/version: 3.4.0
+        openebs.io/version: 3.5.0
     spec:
       serviceAccountName: openebs-maya-operator
       containers:
       - name: openebs-provisioner-hostpath
         imagePullPolicy: IfNotPresent
-        image: openebs/provisioner-localpv:3.4.0
+        image: openebs/provisioner-localpv:3.5.0
         args:
           - "--bd-time-out=$(BDC_BD_BIND_RETRIES)"
         env:
@@ -907,7 +910,7 @@ spec:
         - name: OPENEBS_IO_INSTALLER_TYPE
           value: "openebs-operator-lite"
         - name: OPENEBS_IO_HELPER_IMAGE
-          value: "openebs/linux-utils:3.4.0"
+          value: "openebs/linux-utils:3.5.0"
         - name: OPENEBS_IO_BASE_PATH
           value: "/var/openebs/local"
         # LEADER_ELECTION_ENABLED is used to enable/disable leader election. By default

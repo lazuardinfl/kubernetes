@@ -1,16 +1,19 @@
 
-helm template cilium cilium/cilium --version 1.14.1 \
+10.147.0.0/16 -> pod
+10.97.0.0/16 -> services
+
+helm template cilium cilium/cilium --version 1.15.2 \
 --namespace kube-system \
 --set operator.replicas=1 \
---set kubeProxyReplacement=true \
---set tunnel=disabled \
---set loadBalancer.mode=dsr \
---set loadBalancer.algorithm=maglev \
---set loadBalancer.dsrDispatch=geneve \
---set loadBalancer.acceleration=native \
---set bpf.masquerade=true \
+--set kubeProxyReplacement=false \
+--set encryption.enabled=true \
+--set encryption.type=ipsec \
+--set routingMode=native \
 --set autoDirectNodeRoutes=true \
---set k8sServicePort=6443 \
---set k8sServiceHost=192.168.100.1 \
---set ipv4NativeRoutingCIDR=10.244.0.0/16 \
---set ipam.operator.clusterPoolIPv4PodCIDRList=10.244.0.0/16 > projects/cilium/cilium.yaml
+--set ipam.mode=cluster-pool \
+--set ipam.operator.clusterPoolIPv4PodCIDRList=10.147.0.0/16 \
+--set ipv4NativeRoutingCIDR=10.147.0.0/16 \
+> temp.yaml
+
+kubectl create -n kube-system secret generic cilium-ipsec-keys \
+--from-literal=keys="3 rfc4106(gcm(aes)) $(echo $(dd if=/dev/urandom count=20 bs=1 2> /dev/null | xxd -p -c 64)) 128"

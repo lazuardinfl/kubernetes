@@ -55,7 +55,6 @@ data:
   GITEA__DATABASE__NAME: db_name
   GITEA__DATABASE__USER: user
   GITEA__DATABASE__PASSWD: password
-  GITEA__DATABASE__SSL_MODE: require
   GITEA__CACHE__ADAPTER: redis
   GITEA__CACHE__HOST: redis://:password@redis.domain.com:6379/3?pool_size=100&idle_timeout=180s&
   GITEA__QUEUE__TYPE: redis

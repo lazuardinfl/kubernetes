@@ -321,6 +321,7 @@ subjects:
 apiVersion: v1
 data:
   allow-snippet-annotations: "true"
+  use-proxy-protocol: "true"
 kind: ConfigMap
 metadata:
   labels:

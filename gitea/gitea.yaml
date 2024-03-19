@@ -8,6 +8,10 @@ kind: PersistentVolumeClaim
 metadata:
   name: gitea-pvc
   namespace: gitea
+  labels:
+    app: gitea
+    app.kubernetes.io/name: gitea
+    app.kubernetes.io/instance: gitea
 spec:
   storageClassName: openebs-local
   accessModes:

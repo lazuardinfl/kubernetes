@@ -1,9 +1,4 @@
 apiVersion: v1
-kind: Namespace
-metadata:
-  name: argocd
----
-apiVersion: v1
 kind: ServiceAccount
 metadata:
   labels:
@@ -743,7 +738,7 @@ spec:
   commonName: "Argo CD"
   dnsNames:
     - deploy.domain.com
-    - cli.deploy.domain.com
+    - deploy-cli.domain.com
   issuerRef:
     name: org-ca-issuer
     kind: ClusterIssuer
@@ -794,10 +789,10 @@ spec:
   ingressClassName: nginx
   tls:
     - hosts:
-        - cli.deploy.domain.com
+        - deploy-cli.domain.com
       secretName: argocd-tls
   rules:
-  - host: cli.deploy.domain.com
+  - host: deploy-cli.domain.com
     http:
       paths:
       - path: /

@@ -96,6 +96,10 @@ spec:
             resourceFieldRef:
               resource: limits.memory
               divisor: '1'
+        - name: KUBERNETES_SERVICE_HOST
+          value: "107.102.34.190"
+        - name: KUBERNETES_SERVICE_PORT
+          value: "6443"
         lifecycle:
           postStart:
             exec:
@@ -177,8 +181,6 @@ spec:
           readOnly: true
         - name: xtables-lock
           mountPath: /run/xtables.lock
-        - name: cilium-ipsec-secrets
-          mountPath: /etc/ipsec
         - name: hubble-tls
           mountPath: /var/lib/cilium/tls/hubble
           readOnly: true
@@ -203,6 +205,10 @@ spec:
             fieldRef:
               apiVersion: v1
               fieldPath: metadata.namespace
+        - name: KUBERNETES_SERVICE_HOST
+          value: "107.102.34.190"
+        - name: KUBERNETES_SERVICE_PORT
+          value: "6443"
         volumeMounts:
         - name: tmp
           mountPath: /tmp
@@ -324,6 +330,10 @@ spec:
               name: cilium-config
               key: write-cni-conf-when-ready
               optional: true
+        - name: KUBERNETES_SERVICE_HOST
+          value: "107.102.34.190"
+        - name: KUBERNETES_SERVICE_PORT
+          value: "6443"
         terminationMessagePolicy: FallbackToLogsOnError
         securityContext:
           seLinuxOptions:
@@ -451,9 +461,6 @@ spec:
                 path: common-etcd-client.crt
               - key: ca.crt
                 path: common-etcd-client-ca.crt
-      - name: cilium-ipsec-secrets
-        secret:
-          secretName: cilium-ipsec-keys
       - name: host-proc-sys-net
         hostPath:
           path: /proc/sys/net
@@ -543,6 +550,10 @@ spec:
               key: debug
               name: cilium-config
               optional: true
+        - name: KUBERNETES_SERVICE_HOST
+          value: "107.102.34.190"
+        - name: KUBERNETES_SERVICE_PORT
+          value: "6443"
         ports:
         - name: prometheus
           containerPort: 9963

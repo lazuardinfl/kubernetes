@@ -16,9 +16,12 @@ helm template cilium cilium/cilium --version 1.15.2 \
 --set bpf.masquerade=true \
 --set installNoConntrackIptablesRules=true \
 --set socketLB.hostNamespaceOnly=true \
+--set bgpControlPlane.enabled=true \
 --set ipam.mode=cluster-pool \
 --set ipam.operator.clusterPoolIPv4PodCIDRList=10.147.0.0/16 \
 --set ipv4NativeRoutingCIDR=10.147.0.0/16 \
 --set k8sServiceHost=${API_SERVER_IP} \
 --set k8sServicePort=${API_SERVER_PORT} \
 > temp1.yaml
+
+to apply new config, delete all first, then apply

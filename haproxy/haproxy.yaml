@@ -1,0 +1,14 @@
+apiVersion: networking.k8s.io/v1
+kind: IngressClass
+metadata:
+  name: haproxy
+spec:
+  controller: haproxy.org/ingress-controller
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: haproxy-tcp-config
+  namespace: haproxy
+data:
+  636: openldap/openldap:636

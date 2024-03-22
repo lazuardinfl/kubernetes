@@ -59,8 +59,7 @@ metadata:
   labels:
     app.kubernetes.io/name: openldap
 spec:
-  type: NodePort
-  externalTrafficPolicy: Local
+  type: ClusterIP
   selector:
     app.kubernetes.io/name: openldap
   ports:
@@ -69,13 +68,11 @@ spec:
       port: 389
       protocol: TCP
       targetPort: ldap
-      nodePort: 30389
     - name: ldaps
       appProtocol: ldaps
       port: 636
       protocol: TCP
       targetPort: ldaps
-      nodePort: 30636
 ---
 apiVersion: apps/v1
 kind: Deployment

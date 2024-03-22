@@ -47,7 +47,6 @@ data:
   redis.server: "redis.domain.com:6379"
   redis.db: "5"
   application.namespaces: ns1, ns2
-  server.insecure: "true"
 ---
 apiVersion: v1
 kind: ConfigMap

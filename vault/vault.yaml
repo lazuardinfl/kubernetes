@@ -45,6 +45,7 @@ data:
       tls_cert_file = "/vault/userconfig/vault-server-tls/tls.crt"
       tls_key_file  = "/vault/userconfig/vault-server-tls/tls.key"
       tls_client_ca_file = "/vault/userconfig/vault-server-tls/ca.crt"
+      tls_disable_client_certs = "true"
     }
     storage "file" {
       path = "/vault/data"
@@ -317,14 +318,9 @@ metadata:
     app.kubernetes.io/name: vault
     app.kubernetes.io/instance: vault
   annotations:
-    nginx.ingress.kubernetes.io/proxy-body-size: "0"
-    nginx.ingress.kubernetes.io/backend-protocol: "HTTPS"
-    nginx.ingress.kubernetes.io/ssl-redirect: "true"
-    nginx.ingress.kubernetes.io/ssl-prefer-server-ciphers: "false"
-    nginx.ingress.kubernetes.io/server-snippet: |
-      ssl_session_timeout 1d;
+    haproxy.org/server-ssl: "true"
 spec:
-  ingressClassName: nginx
+  ingressClassName: haproxy
   tls:
     - hosts:
         - vault.domain.com

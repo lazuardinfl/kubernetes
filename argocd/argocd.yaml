@@ -726,23 +726,6 @@ spec:
   policyTypes:
   - Ingress
 ---
-apiVersion: cert-manager.io/v1
-kind: Certificate
-metadata:
-  name: argocd-tls
-  labels:
-    app.kubernetes.io/name: argocd-tls
-    app.kubernetes.io/part-of: argocd
-spec:
-  secretName: argocd-tls
-  commonName: "Argo CD"
-  dnsNames:
-    - deploy.domain.com
-    - deploy-cli.domain.com
-  issuerRef:
-    name: org-ca-issuer
-    kind: ClusterIssuer
----
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
@@ -751,48 +734,15 @@ metadata:
     app.kubernetes.io/name: argocd-ingress
     app.kubernetes.io/part-of: argocd
   annotations:
-    nginx.ingress.kubernetes.io/proxy-body-size: "0"
-    nginx.ingress.kubernetes.io/backend-protocol: "HTTP"
-    nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
-    nginx.ingress.kubernetes.io/ssl-prefer-server-ciphers: "false"
-    nginx.ingress.kubernetes.io/server-snippet: |
-      ssl_session_timeout 1d;
+    haproxy.org/ssl-passthrough: "true"
 spec:
-  ingressClassName: nginx
+  ingressClassName: haproxy
   tls:
     - hosts:
         - deploy.domain.com
-      secretName: argocd-tls
+      secretName: argocd-server-tls
   rules:
   - host: deploy.domain.com
-    http:
-      paths:
-      - path: /
-        pathType: Prefix
-        backend:
-          service:
-            name: argocd-server
-            port:
-              name: http
----
-apiVersion: networking.k8s.io/v1
-kind: Ingress
-metadata:
-  name: argocd-cli-ingress
-  labels:
-    app.kubernetes.io/name: argocd-cli-ingress
-    app.kubernetes.io/part-of: argocd
-  annotations:
-    nginx.ingress.kubernetes.io/proxy-body-size: "0"
-    nginx.ingress.kubernetes.io/backend-protocol: "GRPC"
-spec:
-  ingressClassName: nginx
-  tls:
-    - hosts:
-        - deploy-cli.domain.com
-      secretName: argocd-tls
-  rules:
-  - host: deploy-cli.domain.com
     http:
       paths:
       - path: /

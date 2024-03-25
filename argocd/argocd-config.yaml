@@ -15,7 +15,7 @@ data:
         name: SSO
         config:
           host: $dex.ldap.host
-          insecureNoSSL: true
+          insecureNoSSL: false
           insecureSkipVerify: true
           startTLS: false
           bindDN: $dex.ldap.bindDN

@@ -1,13 +1,7 @@
 apiVersion: v1
-kind: Namespace
-metadata:
-  name: gitea
----
-apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
   name: gitea-pvc
-  namespace: gitea
   labels:
     app: gitea
     app.kubernetes.io/name: gitea
@@ -24,7 +18,6 @@ apiVersion: v1
 kind: Service
 metadata:
   name: gitea-http
-  namespace: gitea
   labels:
     app: gitea
     app.kubernetes.io/name: gitea
@@ -45,7 +38,6 @@ apiVersion: v1
 kind: Service
 metadata:
   name: gitea-ssh
-  namespace: gitea
   labels:
     app: gitea
     app.kubernetes.io/name: gitea
@@ -53,14 +45,11 @@ metadata:
     app.kubernetes.io/version: "1.21.7"
     version: "1.21.7"
 spec:
-  type: NodePort
-  externalTrafficPolicy: Local
+  type: ClusterIP
   ports:
   - name: ssh
     port: 22
     targetPort: 2222
-    protocol: TCP
-    nodePort: 32000
   selector:
     app.kubernetes.io/name: gitea
     app.kubernetes.io/instance: gitea
@@ -69,7 +58,6 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: gitea
-  namespace: gitea
   labels:
     app: gitea
     app.kubernetes.io/name: gitea
@@ -261,7 +249,6 @@ apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
   name: gitea-ingress
-  namespace: gitea
   labels:
     app: gitea
     app.kubernetes.io/name: gitea
@@ -271,13 +258,8 @@ metadata:
   annotations:
     cert-manager.io/cluster-issuer: "org-ca-issuer"
     cert-manager.io/common-name: "Gitea"
-    nginx.ingress.kubernetes.io/proxy-body-size: "0"
-    nginx.ingress.kubernetes.io/ssl-redirect: "true"
-    nginx.ingress.kubernetes.io/ssl-prefer-server-ciphers: "false"
-    nginx.ingress.kubernetes.io/server-snippet: |
-      ssl_session_timeout 1d;
 spec:
-  ingressClassName: nginx
+  ingressClassName: haproxy
   tls:
     - hosts:
         - gitea.domain.com

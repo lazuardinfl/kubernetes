@@ -12,3 +12,4 @@ metadata:
   namespace: haproxy
 data:
   636: openldap/openldap:636
+  2222: gitea/gitea-ssh:22

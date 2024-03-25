@@ -734,6 +734,8 @@ metadata:
     app.kubernetes.io/name: argocd-ingress
     app.kubernetes.io/part-of: argocd
   annotations:
+    cert-manager.io/cluster-issuer: "org-ca-issuer"
+    cert-manager.io/common-name: "Argo CD"
     haproxy.org/ssl-passthrough: "true"
 spec:
   ingressClassName: haproxy

@@ -227,6 +227,9 @@ metadata:
   annotations:
     cert-manager.io/cluster-issuer: "org-ca-issuer"
     cert-manager.io/common-name: "Jenkins"
+    haproxy.org/backend-config-snippet: |
+      acl favicon path_beg /favicon.ico
+      http-request redirect code 302 prefix /path/to/favicon/folder if favicon
 spec:
   ingressClassName: haproxy
   tls:

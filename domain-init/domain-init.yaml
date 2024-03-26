@@ -126,13 +126,8 @@ metadata:
   name: domain-init-ingress
   labels:
     app.kubernetes.io/name: domain-init
-  annotations:
-    nginx.ingress.kubernetes.io/proxy-body-size: "0"
-    nginx.ingress.kubernetes.io/proxy-connect-timeout: "60"
-    nginx.ingress.kubernetes.io/proxy-read-timeout: "90"
-    nginx.ingress.kubernetes.io/proxy-send-timeout: "90"
 spec:
-  ingressClassName: nginx
+  ingressClassName: haproxy
   rules:
   - http:
       paths:

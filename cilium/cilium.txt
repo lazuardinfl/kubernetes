@@ -5,15 +5,23 @@
 helm template cilium cilium/cilium --version 1.15.2 \
 --namespace kube-system \
 --set operator.replicas=1 \
---set kubeProxyReplacement=false \
---set encryption.enabled=true \
---set encryption.type=ipsec \
+--set kubeProxyReplacement=true \
 --set routingMode=native \
 --set autoDirectNodeRoutes=true \
+--set tunnelProtocol=geneve \
+--set loadBalancer.mode=dsr \
+--set loadBalancer.algorithm=maglev \
+--set loadBalancer.dsrDispatch=geneve \
+--set loadBalancer.acceleration=best-effort \
+--set bpf.masquerade=true \
+--set installNoConntrackIptablesRules=true \
+--set socketLB.hostNamespaceOnly=true \
+--set bgpControlPlane.enabled=true \
 --set ipam.mode=cluster-pool \
 --set ipam.operator.clusterPoolIPv4PodCIDRList=10.147.0.0/16 \
 --set ipv4NativeRoutingCIDR=10.147.0.0/16 \
-> temp.yaml
+--set k8sServiceHost=${API_SERVER_IP} \
+--set k8sServicePort=${API_SERVER_PORT} \
+> temp1.yaml
 
-kubectl create -n kube-system secret generic cilium-ipsec-keys \
---from-literal=keys="3 rfc4106(gcm(aes)) $(echo $(dd if=/dev/urandom count=20 bs=1 2> /dev/null | xxd -p -c 64)) 128"
+to apply new config, delete all first, then apply

@@ -15,7 +15,7 @@ data:
         name: SSO
         config:
           host: $dex.ldap.host
-          insecureNoSSL: true
+          insecureNoSSL: false
           insecureSkipVerify: true
           startTLS: false
           bindDN: $dex.ldap.bindDN
@@ -35,6 +35,12 @@ data:
             - userAttr: DN
               groupAttr: member
             nameAttr: cn
+  resource.customizations: |
+    networking.k8s.io/Ingress:
+      health.lua: |
+        hs = {}
+        hs.status = "Healthy"
+        return hs
 ---
 apiVersion: v1
 kind: ConfigMap
@@ -47,7 +53,6 @@ data:
   redis.server: "redis.domain.com:6379"
   redis.db: "5"
   application.namespaces: ns1, ns2
-  server.insecure: "true"
 ---
 apiVersion: v1
 kind: ConfigMap

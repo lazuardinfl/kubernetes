@@ -71,6 +71,8 @@ metadata:
   name: openldap
   labels:
     app.kubernetes.io/name: openldap
+  annotations:
+    secret.reloader.stakater.com/reload: "openldap-tls"
 spec:
   selector:
     matchLabels:

@@ -256,8 +256,7 @@ metadata:
     app.kubernetes.io/version: "1.21.11"
     version: "1.21.11"
   annotations:
-    cert-manager.io/cluster-issuer: "org-ca-issuer"
-    cert-manager.io/common-name: "Gitea"
+    cert-manager.io/cluster-issuer: "issuer"
 spec:
   ingressClassName: haproxy
   tls:

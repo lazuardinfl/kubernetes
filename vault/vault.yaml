@@ -1,9 +1,4 @@
 apiVersion: v1
-kind: Namespace
-metadata:
-  name: vault
----
-apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
   name: vault-pvc
@@ -80,7 +75,7 @@ spec:
   clusterIP: None
   publishNotReadyAddresses: true
   ports:
-    - name: "https"
+    - name: https
       port: 8200
       targetPort: 8200
     - name: https-internal
@@ -114,26 +109,6 @@ spec:
     app.kubernetes.io/name: vault
     app.kubernetes.io/instance: vault
     component: server
----
-apiVersion: v1
-kind: Service
-metadata:
-  name: vault-ui
-  namespace: vault
-  labels:
-    app.kubernetes.io/name: vault-ui
-    app.kubernetes.io/instance: vault
-spec:
-  selector:
-    app.kubernetes.io/name: vault
-    app.kubernetes.io/instance: vault
-    component: server
-  publishNotReadyAddresses: true
-  ports:
-    - name: https
-      port: 8200
-      targetPort: 8200
-  type: ClusterIP
 ---
 apiVersion: apps/v1
 kind: StatefulSet
@@ -185,7 +160,7 @@ spec:
         - name: vault-server-tls
           secret:
             defaultMode: 420
-            secretName: vault-tls
+            secretName: vault-internal-tls
         - name: data
           persistentVolumeClaim:
             claimName: vault-pvc
@@ -293,20 +268,20 @@ spec:
 apiVersion: cert-manager.io/v1
 kind: Certificate
 metadata:
-  name: vault-tls
+  name: vault-internal-tls
   namespace: vault
   labels:
     app.kubernetes.io/name: vault
     app.kubernetes.io/instance: vault
 spec:
-  secretName: vault-tls
-  commonName: "Vault"
+  secretName: vault-internal-tls
+  commonName: vault.domain.com
   dnsNames:
     - vault.domain.com
   ipAddresses:
     - 127.0.0.1
   issuerRef:
-    name: org-ca-issuer
+    name: issuer
     kind: ClusterIssuer
 ---
 apiVersion: networking.k8s.io/v1
@@ -318,6 +293,7 @@ metadata:
     app.kubernetes.io/name: vault
     app.kubernetes.io/instance: vault
   annotations:
+    cert-manager.io/cluster-issuer: "issuer"
     haproxy.org/server-ssl: "true"
 spec:
   ingressClassName: haproxy

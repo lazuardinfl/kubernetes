@@ -97,8 +97,7 @@ metadata:
   labels:
     app.kubernetes.io/name: speedtest
   annotations:
-    cert-manager.io/cluster-issuer: "org-ca-issuer"
-    cert-manager.io/common-name: "Speed Test"
+    cert-manager.io/cluster-issuer: "issuer"
 spec:
   ingressClassName: haproxy
   tls:

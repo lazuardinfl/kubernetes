@@ -6,8 +6,8 @@ metadata:
     app: gitea
     app.kubernetes.io/name: gitea
     app.kubernetes.io/instance: gitea
-    app.kubernetes.io/version: "1.21.10"
-    version: "1.21.10"
+    app.kubernetes.io/version: "1.21.11"
+    version: "1.21.11"
 data:
   _generals_: APP_NAME=Gitea
   cache: ENABLED=true
@@ -42,8 +42,8 @@ metadata:
     app: gitea
     app.kubernetes.io/name: gitea
     app.kubernetes.io/instance: gitea
-    app.kubernetes.io/version: "1.21.10"
-    version: "1.21.10"
+    app.kubernetes.io/version: "1.21.11"
+    version: "1.21.11"
 type: Opaque
 data:
   GITEA_ADMIN_USERNAME: gitea_admin
@@ -68,8 +68,8 @@ metadata:
     app: gitea
     app.kubernetes.io/name: gitea
     app.kubernetes.io/instance: gitea
-    app.kubernetes.io/version: "1.21.10"
-    version: "1.21.10"
+    app.kubernetes.io/version: "1.21.11"
+    version: "1.21.11"
 type: Opaque
 stringData:
   assertions: |
@@ -237,8 +237,8 @@ metadata:
     app: gitea
     app.kubernetes.io/name: gitea
     app.kubernetes.io/instance: gitea
-    app.kubernetes.io/version: "1.21.10"
-    version: "1.21.10"
+    app.kubernetes.io/version: "1.21.11"
+    version: "1.21.11"
 type: Opaque
 stringData:
   configure_gpg_environment.sh: |-

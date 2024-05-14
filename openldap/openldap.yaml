@@ -28,21 +28,6 @@ data:
   LDAP_CONFIG_ADMIN_PASSWORD: password
   LDAP_PASSWORD_HASH: "{hash}"
 ---
-apiVersion: cert-manager.io/v1
-kind: Certificate
-metadata:
-  name: openldap-tls
-  labels:
-    app.kubernetes.io/name: openldap
-spec:
-  secretName: openldap-tls
-  commonName: "OpenLDAP"
-  dnsNames:
-    - openldap.domain.com
-  issuerRef:
-    name: org-ca-issuer
-    kind: ClusterIssuer
----
 apiVersion: v1
 kind: Service
 metadata:
@@ -87,12 +72,6 @@ spec:
         - name: openldap
           image: bitnami/openldap:2.5.16
           imagePullPolicy: Always
-          volumeMounts:
-            - name: tls
-              mountPath: /opt/bitnami/openldap/certs
-              readOnly: true
-            - name: data
-              mountPath: /bitnami/openldap
           env:
             - name: LDAP_ADD_SCHEMAS
               value: "yes"
@@ -115,16 +94,41 @@ spec:
           envFrom:
             - secretRef:
                 name: openldap-secret
-          resources: {}
           ports:
             - name: ldap
               containerPort: 1389
             - name: ldaps
               containerPort: 1636
+          volumeMounts:
+            - name: tls
+              mountPath: /opt/bitnami/openldap/certs
+              readOnly: true
+            - name: data
+              mountPath: /bitnami/openldap
+          resources: {}
       volumes:
         - name: tls
-          secret:
-            secretName: openldap-tls
+          projected:
+            sources:
+            - secret:
+                name: openldap-tls
+            - secret:
+                name: private-ca
         - name: data
           persistentVolumeClaim:
             claimName: openldap-pvc
+---
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: openldap-tls
+  labels:
+    app.kubernetes.io/name: openldap
+spec:
+  secretName: openldap-tls
+  commonName: openldap.domain.com
+  dnsNames:
+    - openldap.domain.com
+  issuerRef:
+    name: issuer
+    kind: ClusterIssuer

@@ -14,10 +14,7 @@ RUN sed -i 's/archive.ubuntu/id.archive.ubuntu/g' /etc/apt/sources.list && \
 # Install tools needed for your repo-server to retrieve & decrypt secrets, render manifests
 # (e.g. curl, awscli, gpg, sops)
 RUN apt-get update && \
-    apt-get install -y ca-certificates && \
-        #curl \
-        #gpg \
-        #ca-certificates && \
+    apt-get install -y curl gpg ca-certificates && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 

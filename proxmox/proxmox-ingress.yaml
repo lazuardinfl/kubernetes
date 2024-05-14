@@ -16,8 +16,7 @@ kind: Ingress
 metadata:
   name: proxmox-ingress
   annotations:
-    cert-manager.io/cluster-issuer: "org-ca-issuer"
-    cert-manager.io/common-name: "Proxmox"
+    cert-manager.io/cluster-issuer: "issuer"
     haproxy.org/server-ssl: "true"
 spec:
   ingressClassName: haproxy

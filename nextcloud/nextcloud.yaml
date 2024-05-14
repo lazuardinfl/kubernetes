@@ -101,9 +101,10 @@ apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
   name: nextcloud-ingress
+  labels:
+    app.kubernetes.io/name: nextcloud
   annotations:
-    cert-manager.io/cluster-issuer: "org-ca-issuer"
-    cert-manager.io/common-name: "Nextcloud"
+    cert-manager.io/cluster-issuer: "issuer"
 spec:
   ingressClassName: haproxy
   tls:

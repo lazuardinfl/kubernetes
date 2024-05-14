@@ -16,7 +16,6 @@ data:
   KC_DB_URL_PORT: port
   KC_DB_USERNAME: username
   KC_DB_PASSWORD: password
-  PKCS12_PASSWORD: password
 ---
 apiVersion: v1
 kind: Service
@@ -93,7 +92,7 @@ spec:
         - name: KC_HTTPS_CERTIFICATE_KEY_FILE
           value: /mnt/certificates/tls.key
         - name: KC_SPI_TRUSTSTORE_FILE_FILE
-          value: /mnt/certificates/truststore.p12
+          value: /mnt/certificates/ca.p12
         - name: KC_HEALTH_ENABLED
           value: "true"
         - name: KC_CACHE
@@ -105,8 +104,8 @@ spec:
         - name: KC_SPI_TRUSTSTORE_FILE_PASSWORD
           valueFrom:
             secretKeyRef:
-              key: PKCS12_PASSWORD
-              name: keycloak-secret
+              key: pkcs12-password
+              name: private-ca
         envFrom:
         - secretRef:
             name: keycloak-secret
@@ -153,36 +152,17 @@ spec:
       restartPolicy: Always
       volumes:
       - name: keycloak-tls-certificates
-        secret:
+        projected:
           defaultMode: 420
-          optional: false
-          secretName: keycloak-tls
+          sources:
+          - secret:
+              name: keycloak-tls
+          - secret:
+              name: private-ca
   updateStrategy:
     rollingUpdate:
       partition: 0
     type: RollingUpdate
----
-apiVersion: cert-manager.io/v1
-kind: Certificate
-metadata:
-  name: keycloak-tls
-  labels:
-    app: keycloak
-    app.kubernetes.io/instance: keycloak
-spec:
-  secretName: keycloak-tls
-  commonName: "Keycloak"
-  dnsNames:
-    - keycloak.domain.com
-  issuerRef:
-    name: org-ca-issuer
-    kind: ClusterIssuer
-  keystores:
-    pkcs12:
-      create: true
-      passwordSecretRef:
-        name: keycloak-secret
-        key: PKCS12_PASSWORD
 ---
 apiVersion: networking.k8s.io/v1
 kind: Ingress
@@ -192,6 +172,7 @@ metadata:
     app: keycloak
     app.kubernetes.io/instance: keycloak
   annotations:
+    cert-manager.io/cluster-issuer: "issuer"
     haproxy.org/server-ssl: "true"
     haproxy.org/backend-config-snippet: |
       acl org path /

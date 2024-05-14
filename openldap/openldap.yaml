@@ -126,6 +126,7 @@ metadata:
     app.kubernetes.io/name: openldap
 spec:
   secretName: openldap-tls
+  commonName: openldap.domain.com
   dnsNames:
     - openldap.domain.com
   issuerRef:

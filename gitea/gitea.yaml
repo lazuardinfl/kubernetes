@@ -64,6 +64,8 @@ metadata:
     app.kubernetes.io/instance: gitea
     app.kubernetes.io/version: "1.21.11"
     version: "1.21.11"
+  annotations:
+    secret.reloader.stakater.com/reload: "gitea-tls"
 spec:
   replicas: 1
   strategy:
@@ -205,13 +207,15 @@ spec:
               containerPort: 2222
             - name: http
               containerPort: 3000
+            - name: redirect
+              containerPort: 3080
           livenessProbe:
             failureThreshold: 10
             initialDelaySeconds: 200
             periodSeconds: 10
             successThreshold: 1
             tcpSocket:
-              port: http
+              port: redirect
             timeoutSeconds: 1
           readinessProbe:
             failureThreshold: 3
@@ -219,15 +223,22 @@ spec:
             periodSeconds: 10
             successThreshold: 1
             tcpSocket:
-              port: http
+              port: redirect
             timeoutSeconds: 1
-          resources: {}
           volumeMounts:
             - name: temp
               mountPath: /tmp
             - name: data
               mountPath: /data
+            - name: tls
+              mountPath: /data/gitea/https
+              readOnly: true
+          resources: {}
       volumes:
+        - name: tls
+          secret:
+            secretName: gitea-tls
+            defaultMode: 420
         - name: init
           secret:
             secretName: gitea-init
@@ -257,6 +268,9 @@ metadata:
     version: "1.21.11"
   annotations:
     cert-manager.io/cluster-issuer: "issuer"
+    haproxy.org/check: "false"
+    haproxy.org/ssl-passthrough: "true"
+    haproxy.org/send-proxy-protocol: "proxy-v2"
 spec:
   ingressClassName: haproxy
   tls:

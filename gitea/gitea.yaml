@@ -268,9 +268,7 @@ metadata:
     version: "1.21.11"
   annotations:
     cert-manager.io/cluster-issuer: "issuer"
-    haproxy.org/check: "false"
     haproxy.org/ssl-passthrough: "true"
-    haproxy.org/send-proxy-protocol: "proxy-v2"
 spec:
   ingressClassName: haproxy
   tls:

@@ -31,13 +31,11 @@ data:
     PORT_TO_REDIRECT=3080
     PROTOCOL=https
     REDIRECT_OTHER_PORT=true
-    REDIRECTOR_USE_PROXY_PROTOCOL=false
     ROOT_URL=https://gitea.domain.com
     SSH_DOMAIN=gitea.domain.com
     SSH_LISTEN_PORT=2222
     SSH_PORT=22
     START_SSH_SERVER=true
-    USE_PROXY_PROTOCOL=true
   service: DISABLE_REGISTRATION=true
 ---
 apiVersion: v1

@@ -1,34 +1,37 @@
 apiVersion: v1
 kind: ServiceAccount
 metadata:
-  name: jenkins-admin
+  name: jenkins
   labels:
     app.kubernetes.io/name: jenkins
 ---
 apiVersion: rbac.authorization.k8s.io/v1
-kind: ClusterRole
+kind: Role
 metadata:
-  name: jenkins-admin
+  name: jenkins-schedule-agents
   labels:
     app.kubernetes.io/name: jenkins
 rules:
-  - apiGroups: [""]
-    resources: ["*"]
-    verbs: ["*"]
+- apiGroups: [""]
+  resources: ["pods", "pods/exec", "pods/log", "persistentvolumeclaims", "events"]
+  verbs: ["get", "list", "watch"]
+- apiGroups: [""]
+  resources: ["pods", "pods/exec", "persistentvolumeclaims"]
+  verbs: ["create", "delete", "deletecollection", "patch", "update"]
 ---
 apiVersion: rbac.authorization.k8s.io/v1
-kind: ClusterRoleBinding
+kind: RoleBinding
 metadata:
-  name: jenkins-admin
+  name: jenkins-schedule-agents
   labels:
     app.kubernetes.io/name: jenkins
 roleRef:
   apiGroup: rbac.authorization.k8s.io
-  kind: ClusterRole
-  name: jenkins-admin
+  kind: Role
+  name: jenkins-schedule-agents
 subjects:
 - kind: ServiceAccount
-  name: jenkins-admin
+  name: jenkins
 ---
 apiVersion: v1
 kind: ConfigMap
@@ -38,17 +41,27 @@ metadata:
     app.kubernetes.io/name: jenkins
 data:
   nginx-conf: |-
+    map_hash_bucket_size 128;
+    map $http_bot_hash $auth_status {
+        default 0;
+        include /etc/nginx/conf.d/allowed-hash.map;
+    }
     server {
         listen 80;
         access_log off;
         real_ip_header X-Forwarded-For;
         real_ip_recursive on;
         set_real_ip_from 0.0.0.0/0;
+        root /usr/share/nginx;
         location ~ /\. {
             deny all;
         }
-        location /public/ {
-            alias /usr/share/nginx/html/;
+        location = /public/config/bot.json {
+            if ($auth_status = 0) {
+                return 401;
+            }
+        }
+        location /public {
             index index.html;
             autoindex off;
             sendfile on;
@@ -60,6 +73,9 @@ data:
             }
         }
     }
+  allowed-hash: |-
+    sha256-app1 1;
+    sha256-app2 1;
 ---
 apiVersion: v1
 kind: PersistentVolumeClaim
@@ -85,7 +101,7 @@ metadata:
     app.kubernetes.io/name: jenkins
 spec:
   type: ClusterIP
-  selector: 
+  selector:
     app.kubernetes.io/name: jenkins
   ports:
   - name: http
@@ -94,44 +110,35 @@ spec:
   - name: static
     port: 80
     targetPort: static
----
-apiVersion: v1
-kind: Service
-metadata:
-  name: jenkins-agent
-  labels:
-    app.kubernetes.io/name: jenkins
-spec:
-  type: ClusterIP
-  selector: 
-    app.kubernetes.io/name: jenkins
-  ports:
   - name: agent
     port: 50000
-    targetPort: 50000
+    targetPort: agent
 ---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: jenkins
   labels:
+    app: jenkins
     app.kubernetes.io/name: jenkins
 spec:
   replicas: 1
   selector:
     matchLabels:
+      app: jenkins
       app.kubernetes.io/name: jenkins
   template:
     metadata:
       labels:
+        app: jenkins
         app.kubernetes.io/name: jenkins
     spec:
+      serviceAccountName: jenkins
       securityContext:
         fsGroup: 1000
         runAsUser: 1000
-      serviceAccountName: jenkins-admin
       initContainers:
-        - name: init-ca
+        - name: init
           image: jenkins/jenkins:2.426.3-lts-jdk17
           imagePullPolicy: IfNotPresent
           command: ["sh", "-c"]
@@ -176,39 +183,17 @@ spec:
             periodSeconds: 10
             timeoutSeconds: 5
             failureThreshold: 3
-          resources: {}
           volumeMounts:
-            - mountPath: /etc/ssl/certs/ca-certificates.crt
-              name: ca
+            - name: ca
+              mountPath: /etc/ssl/certs/ca-certificates.crt
               subPath: ca-certificates.crt
-            - mountPath: /opt/java/openjdk/lib/security/cacerts
-              name: ca
+            - name: ca
+              mountPath: /opt/java/openjdk/lib/security/cacerts
               subPath: cacerts
-            - mountPath: /var/jenkins_home
-              name: data
-        - name: nginx
-          image: nginx:1.23.4
-          imagePullPolicy: IfNotPresent
-          ports:
-            - name: static
-              containerPort: 80
-          securityContext:
-            runAsUser: 0
+            - name: data
+              mountPath: /var/jenkins_home
           resources: {}
-          volumeMounts:
-            - mountPath: /etc/nginx/conf.d
-              name: nginx-conf
-            - mountPath: /usr/share/nginx/html
-              name: data
-              subPath: userContent
-              readOnly: true
       volumes:
-        - name: nginx-conf
-          configMap:
-            name: jenkins-config
-            items:
-            - key: nginx-conf
-              path: default.conf
         - name: private-ca
           secret:
             secretName: private-ca
@@ -217,6 +202,53 @@ spec:
             claimName: jenkins-pvc
         - name: ca
           emptyDir: {}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: jenkins-static
+  labels:
+    app: jenkins-static
+    app.kubernetes.io/name: jenkins
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: jenkins-static
+      app.kubernetes.io/name: jenkins
+  template:
+    metadata:
+      labels:
+        app: jenkins-static
+        app.kubernetes.io/name: jenkins
+    spec:
+      containers:
+        - name: nginx
+          image: nginx:1.23.4
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: static
+              containerPort: 80
+          volumeMounts:
+            - name: nginx-conf
+              mountPath: /etc/nginx/conf.d
+            - name: data
+              mountPath: /usr/share/nginx/public
+              subPath: public
+              readOnly: true
+          resources: {}
+      volumes:
+        - name: nginx-conf
+          configMap:
+            name: jenkins-config
+            items:
+            - key: nginx-conf
+              path: default.conf
+            - key: allowed-hash
+              path: allowed-hash.map
+        - name: data
+          persistentVolumeClaim:
+            claimName: jenkins-pvc
 ---
 apiVersion: networking.k8s.io/v1
 kind: Ingress
@@ -228,7 +260,7 @@ metadata:
     cert-manager.io/cluster-issuer: "issuer"
     haproxy.org/backend-config-snippet: |
       acl favicon path_beg /favicon.ico
-      http-request redirect code 302 prefix /path/to/favicon/folder if favicon
+      http-request redirect code 302 prefix /public/page/global/img if favicon
 spec:
   ingressClassName: haproxy
   tls:
@@ -239,13 +271,6 @@ spec:
   - host: jenkins.domain.com
     http:
       paths:
-      - path: /userContent
-        pathType: Prefix
-        backend:
-          service:
-            name: jenkins
-            port:
-              name: static
       - path: /public
         pathType: Prefix
         backend:

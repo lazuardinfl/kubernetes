@@ -15,18 +15,22 @@ data:
   indexer: ISSUE_INDEXER_TYPE=db
   metrics: ENABLED=false
   repository: |-
-    ROOT=/data/git/gitea-repositories
     DEFAULT_BRANCH=master
+    ROOT=/data/git/gitea-repositories
   security: INSTALL_LOCK=true
   server: |-
     APP_DATA_PATH=/data
+    CERT_FILE=https/tls.crt
     DOMAIN=gitea.domain.com
     ENABLE_PPROF=false
     HTTP_PORT=3000
+    KEY_FILE=https/tls.key
     LANDING_PAGE=explore
     LFS_START_SERVER=true
     OFFLINE_MODE=true
-    PROTOCOL=http
+    PORT_TO_REDIRECT=3080
+    PROTOCOL=https
+    REDIRECT_OTHER_PORT=true
     ROOT_URL=https://gitea.domain.com
     SSH_DOMAIN=gitea.domain.com
     SSH_LISTEN_PORT=2222

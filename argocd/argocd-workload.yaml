@@ -143,7 +143,7 @@ spec:
               key: applicationsetcontroller.allowed.scm.providers
               name: argocd-cmd-params-cm
               optional: true
-        image: quay.io/argoproj/argocd:v2.9.14
+        image: quay.io/argoproj/argocd:v2.9.16
         imagePullPolicy: Always
         name: argocd-applicationset-controller
         ports:
@@ -268,7 +268,7 @@ spec:
         - -n
         - /usr/local/bin/argocd
         - /shared/argocd-dex
-        image: quay.io/argoproj/argocd:v2.9.14
+        image: quay.io/argoproj/argocd:v2.9.16
         imagePullPolicy: Always
         name: copyutil
         securityContext:
@@ -344,7 +344,7 @@ spec:
               key: application.namespaces
               name: argocd-cmd-params-cm
               optional: true
-        image: quay.io/argoproj/argocd:v2.9.14
+        image: quay.io/argoproj/argocd:v2.9.16
         imagePullPolicy: Always
         livenessProbe:
           tcpSocket:
@@ -580,7 +580,7 @@ spec:
         envFrom:
         - secretRef:
             name: argocd-avp-secret
-        image: quay.io/argoproj/argocd:v2.9.14
+        image: quay.io/argoproj/argocd:v2.9.16
         imagePullPolicy: Always
         livenessProbe:
           failureThreshold: 3
@@ -628,7 +628,7 @@ spec:
           name: plugins
       - name: argocd-avp
         command: [/var/run/argocd/argocd-cmp-server]
-        image: your-container-registry/your-custom-image:tag
+        image: argocd-avp:latest
         securityContext:
           runAsNonRoot: true
           runAsUser: 999
@@ -650,7 +650,7 @@ spec:
         resources: {}
       - name: argocd-avp-kustomize
         command: [/var/run/argocd/argocd-cmp-server]
-        image: your-container-registry/your-custom-image:tag
+        image: argocd-avp:latest
         securityContext:
           runAsNonRoot: true
           runAsUser: 999
@@ -676,7 +676,7 @@ spec:
         - -n
         - /usr/local/bin/argocd
         - /var/run/argocd/argocd-cmp-server
-        image: quay.io/argoproj/argocd:v2.9.14
+        image: quay.io/argoproj/argocd:v2.9.16
         name: copyutil
         securityContext:
           allowPrivilegeEscalation: false
@@ -979,7 +979,7 @@ spec:
               key: server.api.content.types
               name: argocd-cmd-params-cm
               optional: true
-        image: quay.io/argoproj/argocd:v2.9.14
+        image: quay.io/argoproj/argocd:v2.9.16
         imagePullPolicy: Always
         livenessProbe:
           httpGet:
@@ -1237,7 +1237,7 @@ spec:
               key: controller.ignore.normalizer.jq.timeout
               name: argocd-cmd-params-cm
               optional: true
-        image: quay.io/argoproj/argocd:v2.9.14
+        image: quay.io/argoproj/argocd:v2.9.16
         imagePullPolicy: Always
         name: argocd-application-controller
         ports:

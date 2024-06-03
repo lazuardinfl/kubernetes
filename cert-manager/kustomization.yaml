@@ -3,5 +3,6 @@ kind: Kustomization
 namespace: cert-manager
 resources:
   - cert-manager.yaml
+  - cert-manager-workload.yaml
 patchesStrategicMerge:
   - patch.yaml

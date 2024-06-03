@@ -16,6 +16,7 @@ helm template cilium cilium/cilium -n kube-system -f values.yaml --version 1.15.
 ```
 
 ## bgp peering
+
 to enable bgp peering, add this helm value:
 ```
 bgpControlPlane:

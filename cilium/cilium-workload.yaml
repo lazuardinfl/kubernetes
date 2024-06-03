@@ -1,9 +1,7 @@
-# Source: cilium/templates/cilium-agent/daemonset.yaml
 apiVersion: apps/v1
 kind: DaemonSet
 metadata:
   name: cilium
-  namespace: kube-system
   labels:
     k8s-app: cilium
     app.kubernetes.io/part-of: cilium
@@ -33,7 +31,7 @@ spec:
     spec:
       containers:
       - name: cilium-agent
-        image: quay.io/cilium/cilium:v1.15.2
+        image: quay.io/cilium/cilium:v1.15.5
         imagePullPolicy: IfNotPresent
         command:
         - cilium-agent
@@ -97,7 +95,7 @@ spec:
               resource: limits.memory
               divisor: '1'
         - name: KUBERNETES_SERVICE_HOST
-          value: "107.102.34.190"
+          value: "192.168.0.1"
         - name: KUBERNETES_SERVICE_PORT
           value: "6443"
         lifecycle:
@@ -189,7 +187,7 @@ spec:
         resources: {}
       initContainers:
       - name: config
-        image: quay.io/cilium/cilium:v1.15.2
+        image: quay.io/cilium/cilium:v1.15.5
         imagePullPolicy: IfNotPresent
         command:
         - cilium-dbg
@@ -206,7 +204,7 @@ spec:
               apiVersion: v1
               fieldPath: metadata.namespace
         - name: KUBERNETES_SERVICE_HOST
-          value: "107.102.34.190"
+          value: "192.168.0.1"
         - name: KUBERNETES_SERVICE_PORT
           value: "6443"
         volumeMounts:
@@ -216,7 +214,7 @@ spec:
       # Required to mount cgroup2 filesystem on the underlying Kubernetes node.
       # We use nsenter command with host's cgroup and mount namespaces enabled.
       - name: mount-cgroup
-        image: quay.io/cilium/cilium:v1.15.2
+        image: quay.io/cilium/cilium:v1.15.5
         imagePullPolicy: IfNotPresent
         env:
         - name: CGROUP_ROOT
@@ -253,7 +251,7 @@ spec:
             drop:
               - ALL
       - name: apply-sysctl-overwrites
-        image: quay.io/cilium/cilium:v1.15.2
+        image: quay.io/cilium/cilium:v1.15.5
         imagePullPolicy: IfNotPresent
         env:
         - name: BIN_PATH
@@ -291,7 +289,7 @@ spec:
       # from a privileged container because the mount propagation bidirectional
       # only works from privileged containers.
       - name: mount-bpf-fs
-        image: quay.io/cilium/cilium:v1.15.2
+        image: quay.io/cilium/cilium:v1.15.5
         imagePullPolicy: IfNotPresent
         args:
         - 'mount | grep "/sys/fs/bpf type bpf" || mount -t bpf bpf /sys/fs/bpf'
@@ -307,7 +305,7 @@ spec:
           mountPath: /sys/fs/bpf
           mountPropagation: Bidirectional
       - name: clean-cilium-state
-        image: quay.io/cilium/cilium:v1.15.2
+        image: quay.io/cilium/cilium:v1.15.5
         imagePullPolicy: IfNotPresent
         command:
         - /init-container.sh
@@ -331,7 +329,7 @@ spec:
               key: write-cni-conf-when-ready
               optional: true
         - name: KUBERNETES_SERVICE_HOST
-          value: "107.102.34.190"
+          value: "192.168.0.1"
         - name: KUBERNETES_SERVICE_PORT
           value: "6443"
         terminationMessagePolicy: FallbackToLogsOnError
@@ -358,7 +356,7 @@ spec:
           mountPath: /var/run/cilium # wait-for-kube-proxy
       # Install the CNI binaries in an InitContainer so we don't have a writable host mount in the agent
       - name: install-cni-binaries
-        image: quay.io/cilium/cilium:v1.15.2
+        image: quay.io/cilium/cilium:v1.15.5
         imagePullPolicy: IfNotPresent
         command:
           - "/install-plugin.sh"
@@ -379,8 +377,7 @@ spec:
             mountPath: /host/opt/cni/bin # .Values.cni.install
       restartPolicy: Always
       priorityClassName: system-node-critical
-      serviceAccount: "cilium"
-      serviceAccountName: "cilium"
+      serviceAccountName: cilium
       automountServiceAccountToken: true
       terminationGracePeriodSeconds: 1
       hostNetwork: true
@@ -485,12 +482,10 @@ spec:
               - key: ca.crt
                 path: client-ca.crt
 ---
-# Source: cilium/templates/cilium-operator/deployment.yaml
 apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: cilium-operator
-  namespace: kube-system
   labels:
     io.cilium/app: operator
     name: cilium-operator
@@ -526,7 +521,7 @@ spec:
     spec:
       containers:
       - name: cilium-operator
-        image: quay.io/cilium/operator-generic:v1.15.2
+        image: quay.io/cilium/operator-generic:v1.15.5
         imagePullPolicy: IfNotPresent
         command:
         - cilium-operator-generic
@@ -551,7 +546,7 @@ spec:
               name: cilium-config
               optional: true
         - name: KUBERNETES_SERVICE_HOST
-          value: "107.102.34.190"
+          value: "192.168.0.1"
         - name: KUBERNETES_SERVICE_PORT
           value: "6443"
         ports:

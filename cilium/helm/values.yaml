@@ -1,0 +1,21 @@
+operator:
+  replicas: 1
+kubeProxyReplacement: true
+routingMode: native
+autoDirectNodeRoutes: true
+tunnelProtocol: geneve
+loadBalancer:
+  mode: dsr
+  algorithm: maglev
+  dsrDispatch: geneve
+  acceleration: best-effort
+bpf:
+  masquerade: true
+installNoConntrackIptablesRules: true
+socketLB:
+  hostNamespaceOnly: true
+ipam:
+  mode: cluster-pool
+  operator:
+    clusterPoolIPv4PodCIDRList: 10.147.0.0/16
+ipv4NativeRoutingCIDR: 10.147.0.0/16

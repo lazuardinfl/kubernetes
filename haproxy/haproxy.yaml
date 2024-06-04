@@ -3,7 +3,7 @@ kind: IngressClass
 metadata:
   name: haproxy
 spec:
-  controller: haproxy.org/ingress-controller
+  controller: haproxy.org/ingress-controller/haproxy
 ---
 apiVersion: v1
 kind: ConfigMap

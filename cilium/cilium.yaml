@@ -1,45 +1,35 @@
-# Source: cilium/templates/cilium-agent/serviceaccount.yaml
 apiVersion: v1
 kind: ServiceAccount
 metadata:
   name: cilium
-  namespace: kube-system
 ---
-# Source: cilium/templates/cilium-operator/serviceaccount.yaml
 apiVersion: v1
 kind: ServiceAccount
 metadata:
   name: cilium-operator
-  namespace: kube-system
 ---
-# Source: cilium/templates/cilium-ca-secret.yaml
 apiVersion: v1
 kind: Secret
 metadata:
   name: cilium-ca
-  namespace: kube-system
 data:
   ca.crt: crt
   ca.key: key
 ---
-# Source: cilium/templates/hubble/tls-helm/server-secret.yaml
 apiVersion: v1
 kind: Secret
 metadata:
   name: hubble-server-certs
-  namespace: kube-system
 type: kubernetes.io/tls
 data:
   ca.crt: ca
   tls.crt: crt
   tls.key: key
 ---
-# Source: cilium/templates/cilium-configmap.yaml
 apiVersion: v1
 kind: ConfigMap
 metadata:
   name: cilium-config
-  namespace: kube-system
 data:
 
   # Identity allocation mode selects how identities are shared between cilium
@@ -217,8 +207,7 @@ data:
   vtep-cidr: ""
   vtep-mask: ""
   vtep-mac: ""
-  enable-bgp-control-plane: "true"
-  bgp-secrets-namespace: "kube-system"
+  enable-bgp-control-plane: "false"
   procfs: "/host/proc"
   bpf-root: "/sys/fs/bpf"
   cgroup-root: "/run/cilium/cgroupv2"
@@ -246,9 +235,12 @@ data:
   mesh-auth-rotated-identities-queue-size: "1024"
   mesh-auth-gc-interval: "5m0s"
 
+  proxy-xff-num-trusted-hops-ingress: "0"
+  proxy-xff-num-trusted-hops-egress: "0"
   proxy-connect-timeout: "2"
   proxy-max-requests-per-connection: "0"
   proxy-max-connection-duration-seconds: "0"
+  proxy-idle-timeout-seconds: "60"
 
   external-envoy-proxy: "false"
   max-connected-clusters: "255"
@@ -256,7 +248,6 @@ data:
 # Extra config allows adding arbitrary properties to the cilium config.
 # By putting it at the end of the ConfigMap, it's also possible to override existing properties.
 ---
-# Source: cilium/templates/cilium-agent/clusterrole.yaml
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
@@ -370,7 +361,6 @@ rules:
   verbs:
   - patch
 ---
-# Source: cilium/templates/cilium-operator/clusterrole.yaml
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
@@ -591,7 +581,6 @@ rules:
   - get
   - update
 ---
-# Source: cilium/templates/cilium-agent/clusterrolebinding.yaml
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
 metadata:
@@ -604,10 +593,8 @@ roleRef:
   name: cilium
 subjects:
 - kind: ServiceAccount
-  name: "cilium"
-  namespace: kube-system
+  name: cilium
 ---
-# Source: cilium/templates/cilium-operator/clusterrolebinding.yaml
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
 metadata:
@@ -620,15 +607,12 @@ roleRef:
   name: cilium-operator
 subjects:
 - kind: ServiceAccount
-  name: "cilium-operator"
-  namespace: kube-system
+  name: cilium-operator
 ---
-# Source: cilium/templates/cilium-agent/role.yaml
 apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
 metadata:
   name: cilium-config-agent
-  namespace: kube-system
   labels:
     app.kubernetes.io/part-of: cilium
 rules:
@@ -641,30 +625,10 @@ rules:
   - list
   - watch
 ---
-# Source: cilium/templates/cilium-agent/role.yaml
-apiVersion: rbac.authorization.k8s.io/v1
-kind: Role
-metadata:
-  name: cilium-bgp-control-plane-secrets
-  namespace: kube-system
-  labels:
-    app.kubernetes.io/part-of: cilium
-rules:
-- apiGroups:
-  - ""
-  resources:
-  - secrets
-  verbs:
-  - get
-  - list
-  - watch
----
-# Source: cilium/templates/cilium-agent/rolebinding.yaml
 apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
 metadata:
   name: cilium-config-agent
-  namespace: kube-system
   labels:
     app.kubernetes.io/part-of: cilium
 roleRef:
@@ -673,32 +637,12 @@ roleRef:
   name: cilium-config-agent
 subjects:
   - kind: ServiceAccount
-    name: "cilium"
-    namespace: kube-system
+    name: cilium
 ---
-# Source: cilium/templates/cilium-agent/rolebinding.yaml
-apiVersion: rbac.authorization.k8s.io/v1
-kind: RoleBinding
-metadata:
-  name: cilium-bgp-control-plane-secrets
-  namespace: kube-system
-  labels:
-    app.kubernetes.io/part-of: cilium
-roleRef:
-  apiGroup: rbac.authorization.k8s.io
-  kind: Role
-  name: cilium-bgp-control-plane-secrets
-subjects:
-- kind: ServiceAccount
-  name: "cilium"
-  namespace: kube-system
----
-# Source: cilium/templates/hubble/peer-service.yaml
 apiVersion: v1
 kind: Service
 metadata:
   name: hubble-peer
-  namespace: kube-system
   labels:
     k8s-app: cilium
     app.kubernetes.io/part-of: cilium
@@ -712,25 +656,3 @@ spec:
     protocol: TCP
     targetPort: 4244
   internalTrafficPolicy: Local
----
-apiVersion: cilium.io/v2alpha1
-kind: CiliumBGPPeeringPolicy
-metadata:
-  name: bgp-peering-policy
-spec:
-  nodeSelector:
-    matchLabels:
-      kubernetes.io/os: linux
-  virtualRouters: # []CiliumBGPVirtualRouter
-  - localASN: 65000
-    exportPodCIDR: true
-    neighbors: # []CiliumBGPNeighbor
-    - peerAddress: 192.168.0.1/32
-      peerASN: 65000
-      eBGPMultihopTTL: 10
-      connectRetryTimeSeconds: 120
-      holdTimeSeconds: 90
-      keepAliveTimeSeconds: 30
-      gracefulRestart:
-        enabled: true
-        restartTimeSeconds: 120

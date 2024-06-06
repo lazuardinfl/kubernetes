@@ -1,7 +1,8 @@
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
+namespace: openebs
 resources:
-  - openebs-operator-lite.yaml
+  - openebs.yaml
   - openebs-storage.yaml
 patchesStrategicMerge:
   - patch.yaml

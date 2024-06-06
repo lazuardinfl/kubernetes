@@ -1,6 +1,6 @@
 
-10.147.0.0/16 -> pod
-10.97.0.0/16 -> services
+# 10.147.0.0/16 -> pod
+# 10.97.0.0/16 -> services
 
 # disable swap from /etc/fstab and sudo swapoff -a
 
@@ -19,7 +19,7 @@ net.bridge.bridge-nf-call-ip6tables = 1
 net.ipv4.ip_forward = 1
 EOF
 
-# Apply sysctl params without reboot
+# apply sysctl params without reboot
 sudo sysctl --system
 
 lsmod | grep br_netfilter
@@ -30,14 +30,14 @@ sysctl net.bridge.bridge-nf-call-iptables net.bridge.bridge-nf-call-ip6tables ne
 # remove old docker
 for pkg in docker.io docker-doc docker-compose docker-compose-v2 podman-docker containerd runc; do sudo apt-get remove $pkg; done
 
-# Add Docker's official GPG key:
+# add docker official gpg key:
 sudo apt-get update
 sudo apt-get install ca-certificates curl
 sudo install -m 0755 -d /etc/apt/keyrings
 sudo curl -fsSL https://download.docker.com/linux/ubuntu/gpg -o /etc/apt/keyrings/docker.asc
 sudo chmod a+r /etc/apt/keyrings/docker.asc
 
-# Add the repository to Apt sources:
+# add docker repository to apt sources:
 echo \
   "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/ubuntu \
   $(. /etc/os-release && echo "$VERSION_CODENAME") stable" | \
@@ -48,12 +48,12 @@ sudo apt-get update
 sudo apt-get install containerd.io
 
 containerd config default | sudo tee /etc/containerd/config.toml
-# ubah config /etc/containerd/config.toml
+# change config /etc/containerd/config.toml
 # SystemdCgroup = true
-# sandbox_image = <ngikutin kubeadm config images list>
+# sandbox_image = <same as kubeadm config images list>
 sudo systemctl restart containerd
 
-# install kubernetes all node
+# install kubernetes on all node
 sudo apt-get update
 sudo apt-get install -y apt-transport-https ca-certificates curl gpg
 curl -fsSL https://pkgs.k8s.io/core:/stable:/v1.28/deb/Release.key | sudo gpg --dearmor -o /etc/apt/keyrings/kubernetes-apt-keyring.gpg

@@ -1,7 +1,0 @@
-helm template -n vault vault hashicorp/vault > default.yaml
-helm template -f values.yaml -n vault vault hashicorp/vault > temp1.yaml
-helm template vault hashicorp/vault -n vault -f values.yaml > temp3.yaml
-
-vault read auth/token/lookup
-vault read auth/token/lookup-self
-vault list auth/token/accessors

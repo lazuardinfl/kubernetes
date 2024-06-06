@@ -1,4 +1,31 @@
 apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: keycloak-config
+  labels:
+    app: keycloak
+    app.kubernetes.io/instance: keycloak
+data:
+  theme.properties: |-
+    import=common/keycloak
+    locales=en
+    welcomeRedirectUrl=${env.WELCOME_REDIRECT}
+  index.ftl: |-
+    <!DOCTYPE html>
+    <html lang="en">
+      <head>
+        <meta http-equiv="refresh" content="0; url=${properties.welcomeRedirectUrl}" />
+        <meta name="robots" content="noindex, nofollow" />
+        <script type="text/javascript">
+          window.location.href = '${properties.welcomeRedirectUrl}'
+        </script>
+      </head>
+      <body>
+        If login page not shown, follow this <a href="${properties.welcomeRedirectUrl}">link</a>.
+      </body>
+    </html>
+---
+apiVersion: v1
 kind: Secret
 metadata:
   name: keycloak-secret
@@ -16,6 +43,7 @@ data:
   KC_DB_URL_PORT: port
   KC_DB_USERNAME: username
   KC_DB_PASSWORD: password
+  WELCOME_REDIRECT: https://keycloak.domain.com/realms/org/account/#/personal-info
 ---
 apiVersion: v1
 kind: Service
@@ -61,6 +89,8 @@ metadata:
   labels:
     app: keycloak
     app.kubernetes.io/instance: keycloak
+  annotations:
+    secret.reloader.stakater.com/reload: "keycloak-tls"
 spec:
   replicas: 1
   selector:
@@ -100,7 +130,9 @@ spec:
         - name: KC_CACHE_STACK
           value: kubernetes
         - name: KC_PROXY
-          value: reencrypt
+          value: passthrough
+        - name: KC_SPI_THEME_WELCOME_THEME
+          value: welcome_redirect
         - name: KC_SPI_TRUSTSTORE_FILE_PASSWORD
           valueFrom:
             secretKeyRef:
@@ -149,6 +181,8 @@ spec:
         volumeMounts:
         - mountPath: /mnt/certificates
           name: keycloak-tls-certificates
+        - mountPath: /opt/keycloak/themes/welcome_redirect/welcome
+          name: theme
       restartPolicy: Always
       volumes:
       - name: keycloak-tls-certificates
@@ -159,6 +193,9 @@ spec:
               name: keycloak-tls
           - secret:
               name: private-ca
+      - name: theme
+        configMap:
+          name: keycloak-config
   updateStrategy:
     rollingUpdate:
       partition: 0
@@ -173,10 +210,7 @@ metadata:
     app.kubernetes.io/instance: keycloak
   annotations:
     cert-manager.io/cluster-issuer: "issuer"
-    haproxy.org/server-ssl: "true"
-    haproxy.org/backend-config-snippet: |
-      acl org path /
-      http-request redirect code 302 prefix /realms/org/account if org
+    haproxy.org/ssl-passthrough: "true"
 spec:
   ingressClassName: haproxy
   tls:

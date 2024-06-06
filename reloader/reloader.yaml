@@ -4,7 +4,6 @@ metadata:
   labels:
     app: reloader
   name: reloader
-  namespace: kube-system
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
@@ -77,7 +76,6 @@ roleRef:
 subjects:
   - kind: ServiceAccount
     name: reloader
-    namespace: kube-system
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -88,7 +86,6 @@ metadata:
     provider: stakater
     version: v1.0.95
   name: reloader
-  namespace: kube-system
 spec:
   replicas: 1
   revisionHistoryLimit: 2

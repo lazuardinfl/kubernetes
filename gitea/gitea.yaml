@@ -286,3 +286,25 @@ spec:
             name: gitea-http
             port:
               number: 3000
+---
+apiVersion: ingress.v1.haproxy.org/v1
+kind: TCP
+metadata:
+  name: gitea-ssh-tcp
+  labels:
+    app: gitea
+    app.kubernetes.io/name: gitea
+    app.kubernetes.io/instance: gitea
+    app.kubernetes.io/version: "1.21.11"
+    version: "1.21.11"
+spec:
+  - name: gitea-ssh
+    frontend:
+      name: gitea-ssh
+      tcplog: true
+      binds:
+        - name: gitea-ssh
+          port: 2222
+    service:
+      name: gitea-ssh
+      port: 22

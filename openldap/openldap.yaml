@@ -138,3 +138,21 @@ spec:
         name: private-ca
         key: pkcs12-password
       profile: Modern2023
+---
+apiVersion: ingress.v1.haproxy.org/v1
+kind: TCP
+metadata:
+  name: openldap-tcp
+  labels:
+    app.kubernetes.io/name: openldap
+spec:
+  - name: openldap
+    frontend:
+      name: openldap
+      tcplog: true
+      binds:
+        - name: openldap
+          port: 636
+    service:
+      name: openldap
+      port: 636

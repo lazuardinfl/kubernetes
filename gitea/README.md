@@ -4,7 +4,7 @@
 
 ```
 helm repo add gitea-charts https://dl.gitea.com/charts
-helm template gitea gitea-charts/gitea -n gitea -f values1.yaml > temp1.yaml
+helm template gitea gitea-charts/gitea -n gitea -f values.yaml > temp.yaml
 ```
 
 ## database

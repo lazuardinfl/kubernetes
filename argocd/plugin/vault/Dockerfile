@@ -1,20 +1,19 @@
-FROM ubuntu:22.04
+FROM debian:12.7-slim
 
-ARG ROOT_CA
-ARG AVP
-ARG KUSTOMIZE
+ARG ROOT_CA=ca/*
+ARG AVP=argocd-vault-plugin
+ARG KUSTOMIZE=kustomize
 
 # Switch to root for the ability to perform install
 USER root
 
-# Change apt mirror region
-RUN sed -i 's/archive.ubuntu/id.archive.ubuntu/g' /etc/apt/sources.list && \
-    sed -i 's/security.ubuntu/id.archive.ubuntu/g' /etc/apt/sources.list
-
 # Install tools needed for your repo-server to retrieve & decrypt secrets, render manifests
 # (e.g. curl, awscli, gpg, sops)
 RUN apt-get update && \
-    apt-get install -y curl gpg ca-certificates && \
+    apt-get install --no-install-recommends -y \
+        gpg \
+        curl \
+        ca-certificates && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 

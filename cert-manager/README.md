@@ -14,6 +14,6 @@ using helm leader election can be changed to another namespace
 ```
 helm repo add jetstack https://charts.jetstack.io
 
-helm template cert-manager jetstack/cert-manager -n cert-manager --version v1.14.5 \
+helm template cert-manager jetstack/cert-manager -n cert-manager --version v1.16.1 \
 --set global.leaderElection.namespace=cert-manager > temp.yaml
 ```

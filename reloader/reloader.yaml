@@ -84,7 +84,7 @@ metadata:
     app: reloader
     group: com.stakater.platform
     provider: stakater
-    version: v1.0.95
+    version: v1.1.0
   name: reloader
 spec:
   replicas: 1
@@ -98,12 +98,21 @@ spec:
         app: reloader
         group: com.stakater.platform
         provider: stakater
-        version: v1.0.95
+        version: v1.1.0
     spec:
       containers:
-      - image: ghcr.io/stakater/reloader:v1.0.95
+      - image: ghcr.io/stakater/reloader:v1.1.0
         imagePullPolicy: IfNotPresent
         name: reloader
+        env:
+        - name: GOMAXPROCS
+          valueFrom:
+            resourceFieldRef:
+              resource: limits.cpu
+        - name: GOMEMLIMIT
+          valueFrom:
+            resourceFieldRef:
+              resource: limits.memory
         ports:
         - name: http
           containerPort: 9090
@@ -125,7 +134,10 @@ spec:
           periodSeconds: 10
           successThreshold: 1
           initialDelaySeconds: 10
-        resources: {}
+        resources:
+          limits:
+            cpu: 150m
+            memory: 512Mi
       securityContext: 
         runAsNonRoot: true
         runAsUser: 65534

@@ -60,7 +60,7 @@ spec:
     spec:
       containers:
         - name: speedtest
-          image: ghcr.io/librespeed/speedtest:latest
+          image: ghcr.io/librespeed/speedtest:5.4.1
           imagePullPolicy: Always
           env:
             - name: MODE

@@ -3,5 +3,5 @@ kind: Kustomization
 namespace: keycloak-dev
 resources:
   - keycloak-operator.yaml
-patches:
-  - path: patch.yaml
+patchesStrategicMerge:
+  - patch.yaml

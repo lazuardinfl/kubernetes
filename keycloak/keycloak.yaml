@@ -34,8 +34,8 @@ metadata:
     app.kubernetes.io/instance: keycloak
 type: Opaque
 data:
-  KEYCLOAK_ADMIN: username
-  KEYCLOAK_ADMIN_PASSWORD: password
+  KC_BOOTSTRAP_ADMIN_USERNAME: username
+  KC_BOOTSTRAP_ADMIN_PASSWORD: password
   KC_HOSTNAME: keycloak.domain.com
   KC_DB: db_type
   KC_DB_URL_HOST: db_host
@@ -43,7 +43,7 @@ data:
   KC_DB_URL_PORT: port
   KC_DB_USERNAME: username
   KC_DB_PASSWORD: password
-  WELCOME_REDIRECT: https://keycloak.domain.com/realms/org/account/#/personal-info
+  WELCOME_REDIRECT: https://keycloak.domain.com/realms/org/account
 ---
 apiVersion: v1
 kind: Service
@@ -62,6 +62,10 @@ spec:
     port: 8443
     protocol: TCP
     targetPort: 8443
+  - name: management
+    port: 9000
+    protocol: TCP
+    targetPort: 9000
 ---
 apiVersion: v1
 kind: Service
@@ -77,7 +81,8 @@ spec:
     app: keycloak
     app.kubernetes.io/instance: keycloak
   ports:
-  - port: 7800
+  - name: tcp
+    port: 7800
     protocol: TCP
     targetPort: 7800
   publishNotReadyAddresses: true
@@ -89,8 +94,6 @@ metadata:
   labels:
     app: keycloak
     app.kubernetes.io/instance: keycloak
-  annotations:
-    secret.reloader.stakater.com/reload: "keycloak-tls"
 spec:
   replicas: 1
   selector:
@@ -107,12 +110,14 @@ spec:
       containers:
       - name: keycloak
         args:
-        - -Djgroups.dns.query=keycloak-discovery.keycloak
+        - -Djgroups.dns.query=keycloak-discovery.$(POD_NAMESPACE)
         - --verbose
         - start
         env:
-        - name: KC_FEATURES
-          value: declarative-user-profile
+        - name: POD_NAMESPACE
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.namespace
         - name: KC_HTTP_PORT
           value: "8080"
         - name: KC_HTTPS_PORT
@@ -121,27 +126,26 @@ spec:
           value: /mnt/certificates/tls.crt
         - name: KC_HTTPS_CERTIFICATE_KEY_FILE
           value: /mnt/certificates/tls.key
-        - name: KC_SPI_TRUSTSTORE_FILE_FILE
-          value: /mnt/certificates/ca.p12
         - name: KC_HEALTH_ENABLED
           value: "true"
         - name: KC_CACHE
           value: ispn
         - name: KC_CACHE_STACK
           value: kubernetes
-        - name: KC_PROXY
-          value: passthrough
+        - name: KC_TRUSTSTORE_PATHS
+          value: /var/run/secrets/kubernetes.io/serviceaccount/ca.crt
+        - name: KC_TRACING_SERVICE_NAME
+          value: keycloak
+        - name: KC_TRACING_RESOURCE_ATTRIBUTES
+          value: k8s.namespace.name=$(POD_NAMESPACE)
+        - name: KC_PROXY_PROTOCOL_ENABLED
+          value: "true"
         - name: KC_SPI_THEME_WELCOME_THEME
           value: welcome_redirect
-        - name: KC_SPI_TRUSTSTORE_FILE_PASSWORD
-          valueFrom:
-            secretKeyRef:
-              key: pkcs12-password
-              name: private-ca
         envFrom:
         - secretRef:
             name: keycloak-secret
-        image: quay.io/keycloak/keycloak:23.0.7
+        image: quay.io/keycloak/keycloak:26.0.5
         imagePullPolicy: Always
         ports:
         - containerPort: 8443
@@ -150,11 +154,14 @@ spec:
         - containerPort: 8080
           name: http
           protocol: TCP
+        - containerPort: 9000
+          name: management
+          protocol: TCP
         livenessProbe:
           failureThreshold: 3
           httpGet:
             path: /health/live
-            port: 8443
+            port: 9000
             scheme: HTTPS
           periodSeconds: 10
           successThreshold: 1
@@ -163,7 +170,7 @@ spec:
           failureThreshold: 3
           httpGet:
             path: /health/ready
-            port: 8443
+            port: 9000
             scheme: HTTPS
           periodSeconds: 10
           successThreshold: 1
@@ -172,27 +179,31 @@ spec:
           failureThreshold: 600
           httpGet:
             path: /health/started
-            port: 8443
+            port: 9000
             scheme: HTTPS
           periodSeconds: 1
           successThreshold: 1
           timeoutSeconds: 1
-        resources: {}
+        resources:
+          limits:
+            memory: 2Gi
         volumeMounts:
+        - mountPath: /opt/keycloak/conf/truststores/secret-private-ca
+          name: truststore-secret-private-ca
         - mountPath: /mnt/certificates
           name: keycloak-tls-certificates
         - mountPath: /opt/keycloak/themes/welcome_redirect/welcome
           name: theme
-      restartPolicy: Always
       volumes:
-      - name: keycloak-tls-certificates
-        projected:
+      - name: truststore-secret-private-ca
+        secret:
           defaultMode: 420
-          sources:
-          - secret:
-              name: keycloak-tls
-          - secret:
-              name: private-ca
+          secretName: private-ca
+      - name: keycloak-tls-certificates
+        secret:
+          defaultMode: 420
+          optional: false
+          secretName: keycloak-tls
       - name: theme
         configMap:
           name: keycloak-config
@@ -211,6 +222,7 @@ metadata:
   annotations:
     cert-manager.io/cluster-issuer: "issuer"
     haproxy.org/ssl-passthrough: "true"
+    haproxy.org/send-proxy-protocol: "proxy-v2"
 spec:
   ingressClassName: haproxy
   tls:
@@ -227,4 +239,4 @@ spec:
           service:
             name: keycloak
             port:
-              number: 8443
+              name: https

@@ -8,7 +8,7 @@ injector:
 server:
   enabled: true
   nodeSelector:
-    kubernetes.io/hostname: rpa-node2
+    kubernetes.io/hostname: worker-node
   extraEnvironmentVars:
     VAULT_CACERT: /vault/userconfig/vault-server-tls/ca.crt
   volumes:

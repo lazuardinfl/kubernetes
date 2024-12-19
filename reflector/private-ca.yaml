@@ -11,3 +11,4 @@ data:
   ca.crt: (cat ca.crt | base64 -w0)
   ca.p12: (cat ca.p12 | base64 -w0)
   pkcs12-password: (echo -n 'password' | base64 -w0)
+  another.crt: (cat another.crt | base64 -w0)

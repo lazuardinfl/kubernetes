@@ -61,7 +61,7 @@ echo 'deb [signed-by=/etc/apt/keyrings/kubernetes-apt-keyring.gpg] https://pkgs.
 sudo apt-get update
 
 # on control plane
-sudo apt-get install -y kubelet kubeadm kubectl
+sudo apt-get install -y kubelet='1.30.8-*' kubeadm='1.30.8-*' kubectl='1.30.8-*'
 sudo apt-mark hold kubelet kubeadm kubectl
 sudo systemctl enable --now kubelet
 sudo kubeadm init \
@@ -72,7 +72,7 @@ sudo kubeadm init \
 --skip-phases=addon/kube-proxy # if using Cilium CNI
 
 # on worker
-sudo apt-get install -y kubelet kubeadm
+sudo apt-get install -y kubelet='1.30.8-*' kubeadm='1.30.8-*'
 sudo apt-mark hold kubelet kubeadm
 sudo systemctl enable --now kubelet
 sudo kubeadm join <control-plane-host>:<control-plane-port> \

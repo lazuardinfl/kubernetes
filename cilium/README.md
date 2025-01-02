@@ -11,7 +11,7 @@ helm repo add cilium https://helm.cilium.io
 export API_SERVER_IP=<kubernetes-api-server-ip>
 export API_SERVER_PORT=<kubernetes-api-server-port>
 
-helm template cilium cilium/cilium -n kube-system -f values.yaml --version 1.16.4 \
+helm template cilium cilium/cilium -n kube-system -f values.yaml --version 1.16.5 \
 --set k8sServiceHost=${API_SERVER_IP} --set k8sServicePort=${API_SERVER_PORT} > temp.yaml
 ```
 

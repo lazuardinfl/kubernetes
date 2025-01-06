@@ -6,7 +6,7 @@ metadata:
   name: gitea-inline-config
   namespace: gitea
   labels:
-    helm.sh/chart: gitea-10.5.0
+    helm.sh/chart: gitea-10.6.0
     app: gitea
     app.kubernetes.io/name: gitea
     app.kubernetes.io/instance: gitea
@@ -53,7 +53,7 @@ metadata:
   name: gitea
   namespace: gitea
   labels:
-    helm.sh/chart: gitea-10.5.0
+    helm.sh/chart: gitea-10.6.0
     app: gitea
     app.kubernetes.io/name: gitea
     app.kubernetes.io/instance: gitea
@@ -226,7 +226,7 @@ metadata:
   name: gitea-init
   namespace: gitea
   labels:
-    helm.sh/chart: gitea-10.5.0
+    helm.sh/chart: gitea-10.6.0
     app: gitea
     app.kubernetes.io/name: gitea
     app.kubernetes.io/instance: gitea
@@ -364,7 +364,7 @@ metadata:
   name: gitea-http
   namespace: gitea
   labels:
-    helm.sh/chart: gitea-10.5.0
+    helm.sh/chart: gitea-10.6.0
     app: gitea
     app.kubernetes.io/name: gitea
     app.kubernetes.io/instance: gitea
@@ -391,7 +391,7 @@ metadata:
   name: gitea-ssh
   namespace: gitea
   labels:
-    helm.sh/chart: gitea-10.5.0
+    helm.sh/chart: gitea-10.6.0
     app: gitea
     app.kubernetes.io/name: gitea
     app.kubernetes.io/instance: gitea
@@ -421,7 +421,7 @@ metadata:
   namespace: gitea
   annotations:
   labels:
-    helm.sh/chart: gitea-10.5.0
+    helm.sh/chart: gitea-10.6.0
     app: gitea
     app.kubernetes.io/name: gitea
     app.kubernetes.io/instance: gitea
@@ -444,7 +444,7 @@ spec:
       annotations:
         checksum/config: f977b445f225c0043831b65154b5fed8500d8398dac589ce51e579c0acc7bdde
       labels:
-        helm.sh/chart: gitea-10.5.0
+        helm.sh/chart: gitea-10.6.0
         app: gitea
         app.kubernetes.io/name: gitea
         app.kubernetes.io/instance: gitea
@@ -657,7 +657,7 @@ metadata:
   name: gitea
   namespace: gitea
   labels:
-    helm.sh/chart: gitea-10.5.0
+    helm.sh/chart: gitea-10.6.0
     app: gitea
     app.kubernetes.io/name: gitea
     app.kubernetes.io/instance: gitea
@@ -686,7 +686,7 @@ metadata:
   namespace: gitea
   labels:
 
-    helm.sh/chart: gitea-10.5.0
+    helm.sh/chart: gitea-10.6.0
     app: gitea
     app.kubernetes.io/name: gitea
     app.kubernetes.io/instance: gitea

@@ -10,7 +10,7 @@ add: olcAccess
 olcAccess: to filter=(&(objectClass=inetOrgPerson)(memberOf=cn=admin,ou=configs,dc=domain,dc=com)) attrs=entry,uid
   by group/extensibleObject/member="cn=admin,ou=configs,dc=domain,dc=com" manage
   by self write
-  by group.exact="cn=users,ou=configs,dc=domain,dc=com" read
+  by group/extensibleObject/member="cn=users,ou=configs,dc=domain,dc=com" read
   by dn.children="ou=services,dc=domain,dc=com" read
   by * none
 # admin password
@@ -20,18 +20,18 @@ olcAccess: to filter=(&(objectClass=inetOrgPerson)(memberOf=cn=admin,ou=configs,
   by dn.base="uid=keycloak,ou=services,dc=domain,dc=com" =xw
   by anonymous auth
   by * none
-# password person
+# person password
 olcAccess: to filter=(objectClass=inetOrgPerson) attrs=userPassword
   by group/extensibleObject/member="cn=admin,ou=configs,dc=domain,dc=com" manage
   by self write
-  by group.exact="cn=users,ou=configs,dc=domain,dc=com" =xw
+  by group/extensibleObject/member="cn=users,ou=configs,dc=domain,dc=com" =xw
   by dn.base="uid=keycloak,ou=services,dc=domain,dc=com" =xw
   by anonymous auth
   by * none
-# password device
+# device password
 olcAccess: to filter=(objectClass=device) attrs=userPassword
   by group/extensibleObject/member="cn=admin,ou=configs,dc=domain,dc=com" manage
-  by group.exact="cn=users,ou=configs,dc=domain,dc=com" write
+  by group/extensibleObject/member="cn=users,ou=configs,dc=domain,dc=com" write
   by self write
   by dn.base="uid=keycloak,ou=services,dc=domain,dc=com" =xw
   by anonymous auth
@@ -39,7 +39,7 @@ olcAccess: to filter=(objectClass=device) attrs=userPassword
 # owner and seeAlso
 olcAccess: to attrs=owner,seeAlso
   by group/extensibleObject/member="cn=admin,ou=configs,dc=domain,dc=com" manage
-  by group.exact="cn=groups,ou=configs,dc=domain,dc=com" write
+  by group/extensibleObject/member="cn=groups,ou=configs,dc=domain,dc=com" write
   by set="this/owner & user" write
   by set="this/owner/manager* & user" write
   by set="this/seeAlso/owner & user" write
@@ -49,7 +49,7 @@ olcAccess: to attrs=owner,seeAlso
 # users
 olcAccess: to dn.children="ou=users,dc=domain,dc=com"
   by group/extensibleObject/member="cn=admin,ou=configs,dc=domain,dc=com" manage
-  by group.exact="cn=users,ou=configs,dc=domain,dc=com" write
+  by group/extensibleObject/member="cn=users,ou=configs,dc=domain,dc=com" write
   by set="this/seeAlso/owner* & user" write
   by set="this/seeAlso/owner*/secretary* & user" write
   by set="this/seeAlso/owner/manager* & user" write
@@ -68,26 +68,25 @@ olcAccess: to dn.children="ou=users,dc=domain,dc=com"
 # super groups
 olcAccess: to dn.children="ou=groups,dc=domain,dc=com" filter=(cn=super)
   by group/extensibleObject/member="cn=admin,ou=configs,dc=domain,dc=com" manage
-  by group.exact="cn=groups,ou=configs,dc=domain,dc=com" read
+  by group/extensibleObject/member="cn=groups,ou=configs,dc=domain,dc=com" read
   by dn.children="ou=services,dc=domain,dc=com" read
   by * none
 # groups
 olcAccess: to dn.children="ou=groups,dc=domain,dc=com"
   by group/extensibleObject/member="cn=admin,ou=configs,dc=domain,dc=com" manage
-  by group.exact="cn=groups,ou=configs,dc=domain,dc=com" write
-  by set="this/owner* & user" write
-  by set="this/owner*/secretary* & user" write
-  by set="this/owner/manager* & user" write
-  by set="this/owner/manager*/secretary* & user" write
-  by set="this/manager* & user" write
-  by set="this/manager*/secretary* & user" write
-  by set="this/member* & user" read
-  by set="user/manager* & this/manager" read
+  by group/extensibleObject/member="cn=groups,ou=configs,dc=domain,dc=com" write
+  by set="this/owner & user" write
+  by set="this/manager & user" write
+  by set="this/secretary & user" write
+  by set="this/-*/owner & user" write
+  by set="this/-*/manager & user" write
+  by set="this/-*/secretary & user" write
   by dn.children="ou=services,dc=domain,dc=com" read
   by * break
-# app services
+# services
 olcAccess: to dn.children="ou=services,dc=domain,dc=com"
-  by group.exact="cn=services,ou=configs,dc=domain,dc=com" write
+  by group/extensibleObject/member="cn=admin,ou=configs,dc=domain,dc=com" manage
+  by group/extensibleObject/member="cn=services,ou=configs,dc=domain,dc=com" write
   by * break
 olcAccess: to dn.one="dc=domain,dc=com" attrs=children
   by set="this/seeAlso/member* & user" write

@@ -1,20 +1,10 @@
 apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: nextcloud-config
-  labels:
-    app.kubernetes.io/name: nextcloud
-data:
-  NC_DOMAIN: nextcloud.domain.com
-  OVERWRITEHOST: nextcloud.domain.com
-  TEMP_APPSTORE: http://url/to/temp/appstore
----
-apiVersion: v1
 kind: Secret
 metadata:
   name: nextcloud-secret
   labels:
     app.kubernetes.io/name: nextcloud
+    app.kubernetes.io/instance: nextcloud
   annotations:
     avp.kubernetes.io/path: "secret/data/system/nextcloud"
 type: Opaque
@@ -25,8 +15,8 @@ data:
   POSTGRES_PASSWORD: <postgres_password | base64encode>
   REDIS_HOST: <redis_host | base64encode>
   REDIS_HOST_PASSWORD: <redis_host_password | base64encode>
-  ADMIN_USER: <admin_user | base64encode>
-  ADMIN_PASSWORD: <admin_password | base64encode>
+  NEXTCLOUD_ADMIN_USER: <admin_user | base64encode>
+  NEXTCLOUD_ADMIN_PASSWORD: <admin_password | base64encode>
 ---
 apiVersion: v1
 kind: PersistentVolumeClaim
@@ -34,6 +24,8 @@ metadata:
   name: nextcloud-pvc
   labels:
     app.kubernetes.io/name: nextcloud
+    app.kubernetes.io/instance: nextcloud
+    app.kubernetes.io/component: app
   annotations:
     argocd.argoproj.io/sync-options: Delete=false
 spec:
@@ -47,55 +39,116 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
+  name: nextcloud
   labels:
-    app.kubernetes.io/name: nextcloud-aio-apache
-  name: nextcloud-aio-apache
+    app.kubernetes.io/name: nextcloud
+    app.kubernetes.io/instance: nextcloud
+    app.kubernetes.io/component: app
 spec:
   type: ClusterIP
-  ipFamilyPolicy: PreferDualStack
   ports:
-    - name: "11000"
-      port: 11000
-      targetPort: 11000
-    - name: 11000-udp
-      port: 11000
-      protocol: UDP
-      targetPort: 11000
+    - port: 8080
+      targetPort: 80
+      protocol: TCP
+      name: http
   selector:
-    app.kubernetes.io/name: nextcloud-aio-apache
+    app.kubernetes.io/name: nextcloud
+    app.kubernetes.io/instance: nextcloud
+    app.kubernetes.io/component: app
 ---
-apiVersion: v1
-kind: Service
+apiVersion: apps/v1
+kind: Deployment
 metadata:
+  name: nextcloud
   labels:
-    app.kubernetes.io/name: nextcloud-aio-imaginary
-  name: nextcloud-aio-imaginary
+    app.kubernetes.io/name: nextcloud
+    app.kubernetes.io/instance: nextcloud
+    app.kubernetes.io/component: app
 spec:
-  ipFamilyPolicy: PreferDualStack
-  ports:
-    - name: "9000"
-      port: 9000
-      targetPort: 9000
+  replicas: 1
+  strategy:
+    type: Recreate
   selector:
-    app.kubernetes.io/name: nextcloud-aio-imaginary
----
-apiVersion: v1
-kind: Service
-metadata:
-  labels:
-    app.kubernetes.io/name: nextcloud-aio-nextcloud
-  name: nextcloud-aio-nextcloud
-spec:
-  ipFamilyPolicy: PreferDualStack
-  ports:
-    - name: "9000"
-      port: 9000
-      targetPort: 9000
-    - name: "9001"
-      port: 9001
-      targetPort: 9001
-  selector:
-    app.kubernetes.io/name: nextcloud-aio-nextcloud
+    matchLabels:
+      app.kubernetes.io/name: nextcloud
+      app.kubernetes.io/instance: nextcloud
+      app.kubernetes.io/component: app
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: nextcloud
+        app.kubernetes.io/instance: nextcloud
+        app.kubernetes.io/component: app
+    spec:
+      containers:
+        - name: nextcloud
+          image: nextcloud:30.0.5-apache
+          env:
+            - name: NEXTCLOUD_TRUSTED_DOMAINS
+              value: "nextcloud.domain.com nextcloud.kube"
+            - name: NEXTCLOUD_DATA_DIR
+              value: "/var/www/html/data"
+          envFrom:
+            - secretRef:
+                name: nextcloud-secret
+          ports:
+            - name: http
+              containerPort: 80
+              protocol: TCP
+          livenessProbe:
+            httpGet:
+              path: /status.php
+              port:  80
+              httpHeaders:
+              - name: Host
+                value: "nextcloud.kube"
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            timeoutSeconds: 5
+            successThreshold: 1
+            failureThreshold: 3
+          readinessProbe:
+            httpGet:
+              path: /status.php
+              port:  80
+              httpHeaders:
+              - name: Host
+                value: "nextcloud.kube"
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            timeoutSeconds: 5
+            successThreshold: 1
+            failureThreshold: 3
+          volumeMounts:
+            - name: nextcloud-main
+              mountPath: /var/www/
+              subPath: root
+            - name: nextcloud-main
+              mountPath: /var/www/html
+              subPath: html
+            - name: nextcloud-main
+              mountPath: /var/www/html/data
+              subPath: data
+            - name: nextcloud-main
+              mountPath: /var/www/html/config
+              subPath: config
+            - name: nextcloud-main
+              mountPath: /var/www/html/custom_apps
+              subPath: custom_apps
+            - name: nextcloud-main
+              mountPath: /var/www/tmp
+              subPath: tmp
+            - name: nextcloud-main
+              mountPath: /var/www/html/themes
+              subPath: themes
+          resources: {}
+      volumes:
+        - name: nextcloud-main
+          persistentVolumeClaim:
+            claimName: nextcloud-pvc
+      securityContext:
+        # Will mount configuration files as www-data (id: 33) for nextcloud
+        fsGroup: 33
 ---
 apiVersion: networking.k8s.io/v1
 kind: Ingress
@@ -103,6 +156,8 @@ metadata:
   name: nextcloud-ingress
   labels:
     app.kubernetes.io/name: nextcloud
+    app.kubernetes.io/instance: nextcloud
+    app.kubernetes.io/component: app
   annotations:
     cert-manager.io/cluster-issuer: "issuer"
 spec:
@@ -115,10 +170,10 @@ spec:
   - host: nextcloud.domain.com
     http:
       paths:
-      - path: /
-        pathType: Prefix
-        backend:
-          service:
-            name: nextcloud-aio-apache
-            port:
-              number: 11000
+        - path: /
+          pathType: Prefix
+          backend:
+            service:
+              name: nextcloud
+              port:
+                number: 8080

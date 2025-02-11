@@ -1,7 +1,5 @@
 nextcloud:
-  trustedDomains:
-    - nextcloud.domain.com
-    - nextcloud.kube
+  host: nextcloud.domain.com
   username: admin
   password: changeme
   extraEnv:
@@ -11,6 +9,17 @@ nextcloud:
       value: "6379"
     - name: REDIS_HOST_PASSWORD
       value: pass
+    - name: TRUSTED_PROXIES
+      value: "10.0.0.0/8 192.168.0.0/16"
+  configs:
+    other.config.php: |-
+      <?php
+      $CONFIG = array (
+        'skeletondirectory' => '',
+        'lost_password_link' => 'disabled',
+        'has_internet_connection' => false,
+        'simpleSignUpLink.shown' => false,
+      );
 
 persistence:
   enabled: true
@@ -25,6 +34,9 @@ externalDatabase:
   database: nextcloud
   user: id
   password: pass
+
+phpClientHttpsFix:
+  enabled: true
 
 ingress:
   enabled: true

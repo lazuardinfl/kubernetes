@@ -6,6 +6,11 @@ metadata:
     app.kubernetes.io/name: nextcloud
     app.kubernetes.io/instance: nextcloud
 data:
+  remoteip.conf: |-
+    RemoteIPHeader X-Forwarded-For
+    RemoteIPInternalProxy 10.0.0.0/8
+    RemoteIPInternalProxy 172.16.0.0/12
+    RemoteIPInternalProxy 192.168.0.0/16
   other.config.php: |-
     <?php
     $CONFIG = array (
@@ -322,6 +327,9 @@ metadata:
     app.kubernetes.io/name: nextcloud
     app.kubernetes.io/instance: nextcloud
     app.kubernetes.io/component: app
+  annotations:
+    configmap.reloader.stakater.com/reload: nextcloud-config
+    secret.reloader.stakater.com/reload: nextcloud-secret
 spec:
   replicas: 1
   strategy:
@@ -366,7 +374,7 @@ spec:
             - name: NEXTCLOUD_DATA_DIR
               value: "/var/www/html/data"
             - name: TRUSTED_PROXIES
-              value: "10.0.0.0/8 192.168.0.0/16"
+              value: "10.0.0.0/8 172.16.0.0/12 192.168.0.0/16"
           envFrom:
             - secretRef:
                 name: nextcloud-secret
@@ -456,6 +464,9 @@ spec:
             - name: nextcloud-config
               mountPath: /var/www/html/config/upgrade-disable-web.config.php
               subPath: upgrade-disable-web.config.php
+            - name: nextcloud-config
+              mountPath: /etc/apache2/conf-available/remoteip.conf
+              subPath: remoteip.conf
             - name: ca
               mountPath: /etc/ssl/certs/ca-certificates.crt
               subPath: ca-certificates.crt
@@ -486,6 +497,8 @@ metadata:
     app.kubernetes.io/component: app
   annotations:
     cert-manager.io/cluster-issuer: "issuer"
+    haproxy.org/response-set-header: |
+      Strict-Transport-Security "max-age=15552000"
 spec:
   ingressClassName: haproxy
   tls:

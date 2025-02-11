@@ -30,6 +30,16 @@ spec:
               metadata:
                 name: nextcloud-secret
           - patch: |-
+              apiVersion: v1
+              kind: ConfigMap
+              metadata:
+                name: nextcloud-config
+              data:
+                remoteip.conf: |-
+                  RemoteIPHeader X-Forwarded-For
+                  RemoteIPInternalProxy <10.0.0.0/8>
+                  RemoteIPInternalProxy <192.168.0.0/16>
+          - patch: |-
               apiVersion: apps/v1
               kind: Deployment
               metadata:

@@ -36,7 +36,7 @@ spec:
                 name: nextcloud-config
               data:
                 remoteip.conf: |-
-                  RemoteIPHeader X-Forwarded-For
+                  RemoteIPHeader <X-Forwarded-For>
                   RemoteIPInternalProxy <10.0.0.0/8>
                   RemoteIPInternalProxy <192.168.0.0/16>
           - patch: |-
@@ -52,6 +52,13 @@ spec:
                         image: <registry.private/nextcloud/nextcloud:30.0.5-apache>
                     containers:
                       - name: nextcloud
+                        image: <registry.private/nextcloud/nextcloud:30.0.5-apache>
+                        env:
+                          - name: NEXTCLOUD_TRUSTED_DOMAINS
+                            value: <"nextcloud.domain.com">
+                          - name: TRUSTED_PROXIES
+                            value: <"10.0.0.0/8 192.168.0.0/16">
+                      - name: nextcloud-cron
                         image: <registry.private/nextcloud/nextcloud:30.0.5-apache>
                         env:
                           - name: NEXTCLOUD_TRUSTED_DOMAINS

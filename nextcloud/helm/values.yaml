@@ -10,7 +10,7 @@ nextcloud:
     - name: REDIS_HOST_PASSWORD
       value: pass
     - name: TRUSTED_PROXIES
-      value: "10.0.0.0/8 192.168.0.0/16"
+      value: "10.0.0.0/8 172.16.0.0/12 192.168.0.0/16"
   configs:
     other.config.php: |-
       <?php
@@ -36,6 +36,9 @@ externalDatabase:
   password: pass
 
 phpClientHttpsFix:
+  enabled: true
+
+cronjob:
   enabled: true
 
 ingress:

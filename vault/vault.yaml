@@ -158,8 +158,7 @@ spec:
       serviceAccountName: vault
       initContainers:
         - name: reloader
-          image: alpine/k8s:1.30.8
-          imagePullPolicy: IfNotPresent
+          image: alpine/k8s:latest
           command: ["/bin/bash", "-c", "--"]
           args:
           - sleep 120;
@@ -167,7 +166,6 @@ spec:
       containers:
         - name: loop
           image: alpine:latest
-          imagePullPolicy: IfNotPresent
           command: ["tail", "-f", "/dev/null"]
           resources: {}
 ---
@@ -232,8 +230,7 @@ spec:
           emptyDir: {}
       containers:
         - name: vault
-          image: hashicorp/vault:1.18.3
-          imagePullPolicy: IfNotPresent
+          image: hashicorp/vault:1.18.4
           command:
           - "/bin/sh"
           - "-ec"

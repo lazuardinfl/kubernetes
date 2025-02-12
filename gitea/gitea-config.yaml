@@ -6,8 +6,8 @@ metadata:
     app: gitea
     app.kubernetes.io/name: gitea
     app.kubernetes.io/instance: gitea
-    app.kubernetes.io/version: "1.22.6"
-    version: "1.22.6"
+    app.kubernetes.io/version: "1.23.3"
+    version: "1.23.3"
 data:
   _generals_: APP_NAME=Gitea
   cron.update_checker: ENABLED=false
@@ -45,8 +45,8 @@ metadata:
     app: gitea
     app.kubernetes.io/name: gitea
     app.kubernetes.io/instance: gitea
-    app.kubernetes.io/version: "1.22.6"
-    version: "1.22.6"
+    app.kubernetes.io/version: "1.23.3"
+    version: "1.23.3"
 type: Opaque
 data:
   GITEA_ADMIN_USERNAME: gitea_admin
@@ -71,8 +71,8 @@ metadata:
     app: gitea
     app.kubernetes.io/name: gitea
     app.kubernetes.io/instance: gitea
-    app.kubernetes.io/version: "1.22.6"
-    version: "1.22.6"
+    app.kubernetes.io/version: "1.23.3"
+    version: "1.23.3"
 type: Opaque
 stringData:
   assertions: |
@@ -240,8 +240,8 @@ metadata:
     app: gitea
     app.kubernetes.io/name: gitea
     app.kubernetes.io/instance: gitea
-    app.kubernetes.io/version: "1.22.6"
-    version: "1.22.6"
+    app.kubernetes.io/version: "1.23.3"
+    version: "1.23.3"
 type: Opaque
 stringData:
   configure_gpg_environment.sh: |-

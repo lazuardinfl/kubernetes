@@ -94,6 +94,8 @@ metadata:
   labels:
     app: keycloak
     app.kubernetes.io/instance: keycloak
+  annotations:
+    secret.reloader.stakater.com/reload: "keycloak-tls"
 spec:
   replicas: 1
   selector:
@@ -109,6 +111,7 @@ spec:
     spec:
       containers:
       - name: keycloak
+        image: quay.io/keycloak/keycloak:26.1.2
         args:
         - -Djgroups.dns.query=keycloak-discovery.$(POD_NAMESPACE)
         - --verbose
@@ -145,8 +148,6 @@ spec:
         envFrom:
         - secretRef:
             name: keycloak-secret
-        image: quay.io/keycloak/keycloak:26.0.7
-        imagePullPolicy: Always
         ports:
         - containerPort: 8443
           name: https

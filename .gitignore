@@ -8,3 +8,7 @@ test
 *.env
 patch.yaml
 *.patch.yaml
+
+# other
+argocd/plugin/vault/ca/*
+!argocd/plugin/vault/ca/README.md

@@ -49,17 +49,17 @@ spec:
                   spec:
                     initContainers:
                       - name: init
-                        image: <registry.private/nextcloud/nextcloud:30.0.5-apache>
+                        image: <registry.private/nextcloud/nextcloud:30.0.6-apache>
                     containers:
                       - name: nextcloud
-                        image: <registry.private/nextcloud/nextcloud:30.0.5-apache>
+                        image: <registry.private/nextcloud/nextcloud:30.0.6-apache>
                         env:
                           - name: NEXTCLOUD_TRUSTED_DOMAINS
                             value: <"nextcloud.domain.com">
                           - name: TRUSTED_PROXIES
                             value: <"10.0.0.0/8 192.168.0.0/16">
                       - name: nextcloud-cron
-                        image: <registry.private/nextcloud/nextcloud:30.0.5-apache>
+                        image: <registry.private/nextcloud/nextcloud:30.0.6-apache>
                         env:
                           - name: NEXTCLOUD_TRUSTED_DOMAINS
                             value: <"nextcloud.domain.com">

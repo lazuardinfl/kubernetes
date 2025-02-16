@@ -72,7 +72,6 @@ spec:
             runAsNonRoot: true
             runAsUser: 1000
           image: emberstack/kubernetes-reflector:7.1.288
-          imagePullPolicy: IfNotPresent
           env:
             - name: ES_Serilog__MinimumLevel__Default
               value: "Information"

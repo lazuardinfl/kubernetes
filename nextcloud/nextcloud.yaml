@@ -348,7 +348,7 @@ spec:
     spec:
       initContainers:
         - name: init
-          image: nextcloud:30.0.5-apache
+          image: nextcloud:30.0.6-apache
           command: ["bash", "-c"]
           args:
           - update-ca-certificates;
@@ -365,7 +365,7 @@ spec:
               mountPath: /custom-ca
       containers:
         - name: nextcloud
-          image: nextcloud:30.0.5-apache
+          image: nextcloud:30.0.6-apache
           env:
             - name: OVERWRITEPROTOCOL
               value: "https"
@@ -472,7 +472,7 @@ spec:
               subPath: ca-certificates.crt
           resources: {}
         - name: nextcloud-cron
-          image: nextcloud:30.0.5-apache
+          image: nextcloud:30.0.6-apache
           command:
             - /cron.sh
           env:

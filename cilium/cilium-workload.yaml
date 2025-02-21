@@ -26,8 +26,7 @@ spec:
           type: Unconfined
       containers:
       - name: cilium-agent
-        image: quay.io/cilium/cilium:v1.16.5
-        imagePullPolicy: IfNotPresent
+        image: quay.io/cilium/cilium:v1.16.7
         command:
         - cilium-agent
         args:
@@ -163,6 +162,9 @@ spec:
           mountPropagation: HostToContainer
         - name: cilium-run
           mountPath: /var/run/cilium
+        - name: cilium-netns
+          mountPath: /var/run/cilium/netns
+          mountPropagation: HostToContainer
         - name: etc-cni-netd
           mountPath: /host/etc/cni/net.d
         - name: clustermesh-secrets
@@ -182,8 +184,7 @@ spec:
         resources: {}
       initContainers:
       - name: config
-        image: quay.io/cilium/cilium:v1.16.5
-        imagePullPolicy: IfNotPresent
+        image: quay.io/cilium/cilium:v1.16.7
         command:
         - cilium-dbg
         - build-config
@@ -209,8 +210,7 @@ spec:
       # Required to mount cgroup2 filesystem on the underlying Kubernetes node.
       # We use nsenter command with host's cgroup and mount namespaces enabled.
       - name: mount-cgroup
-        image: quay.io/cilium/cilium:v1.16.5
-        imagePullPolicy: IfNotPresent
+        image: quay.io/cilium/cilium:v1.16.7
         env:
         - name: CGROUP_ROOT
           value: /run/cilium/cgroupv2
@@ -246,8 +246,7 @@ spec:
             drop:
               - ALL
       - name: apply-sysctl-overwrites
-        image: quay.io/cilium/cilium:v1.16.5
-        imagePullPolicy: IfNotPresent
+        image: quay.io/cilium/cilium:v1.16.7
         env:
         - name: BIN_PATH
           value: /opt/cni/bin
@@ -284,8 +283,7 @@ spec:
       # from a privileged container because the mount propagation bidirectional
       # only works from privileged containers.
       - name: mount-bpf-fs
-        image: quay.io/cilium/cilium:v1.16.5
-        imagePullPolicy: IfNotPresent
+        image: quay.io/cilium/cilium:v1.16.7
         args:
         - 'mount | grep "/sys/fs/bpf type bpf" || mount -t bpf bpf /sys/fs/bpf'
         command:
@@ -300,8 +298,7 @@ spec:
           mountPath: /sys/fs/bpf
           mountPropagation: Bidirectional
       - name: clean-cilium-state
-        image: quay.io/cilium/cilium:v1.16.5
-        imagePullPolicy: IfNotPresent
+        image: quay.io/cilium/cilium:v1.16.7
         command:
         - /init-container.sh
         env:
@@ -351,8 +348,7 @@ spec:
           mountPath: /var/run/cilium # wait-for-kube-proxy
       # Install the CNI binaries in an InitContainer so we don't have a writable host mount in the agent
       - name: install-cni-binaries
-        image: quay.io/cilium/cilium:v1.16.5
-        imagePullPolicy: IfNotPresent
+        image: quay.io/cilium/cilium:v1.16.7
         command:
           - "/install-plugin.sh"
         resources:
@@ -395,6 +391,11 @@ spec:
       - name: cilium-run
         hostPath:
           path: /var/run/cilium
+          type: DirectoryOrCreate
+        # To exec into pod network namespaces
+      - name: cilium-netns
+        hostPath:
+          path: /var/run/netns
           type: DirectoryOrCreate
         # To keep state between restarts / upgrades for bpf maps
       - name: bpf-maps
@@ -530,8 +531,7 @@ spec:
     spec:
       containers:
       - name: cilium-operator
-        image: quay.io/cilium/operator-generic:v1.16.5
-        imagePullPolicy: IfNotPresent
+        image: quay.io/cilium/operator-generic:v1.16.7
         command:
         - cilium-operator-generic
         args:

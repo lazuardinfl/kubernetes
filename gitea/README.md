@@ -4,12 +4,12 @@
 
 ```
 helm repo add gitea-charts https://dl.gitea.com/charts
-helm template gitea gitea-charts/gitea -n gitea -f values.yaml --version 10.6.0 > temp.yaml
+helm template gitea gitea-charts/gitea -n gitea -f values.yaml > temp.yaml
 ```
 
 ## database
 
-postgresql \
+#### postgresql
 login as super user
 ```
 CREATE USER <user> WITH PASSWORD '<pass>';
@@ -19,16 +19,21 @@ GRANT ALL PRIVILEGES ON DATABASE <db> TO <user>;
 GRANT ALL ON SCHEMA public TO <user>;
 ```
 
-## config
-
-use ldap to login
+#### redis
 ```
-server:
-LANDING_PAGE=explore
-
-service:
-DISABLE_REGISTRATION=true
-
-redis:
 redis://:password@redis.domain.com:6379/3?pool_size=100&idle_timeout=180s&
+```
+
+## ldap
+
+group:
+```
+{
+    "cn=admin,ou=gitea,ou=groups,dc=domain,dc=com": {
+        "org": ["Admin"]
+    },
+    "cn=user,ou=gitea,ou=groups,dc=domain,dc=com": {
+        "org": ["team1", "team2"]
+    }
+}
 ```

@@ -4,28 +4,16 @@
 
 # disable swap from /etc/fstab and sudo swapoff -a
 
-cat <<EOF | sudo tee /etc/modules-load.d/k8s.conf
-overlay
-br_netfilter
-EOF
-
-sudo modprobe overlay
-sudo modprobe br_netfilter
-
 # sysctl params required by setup, params persist across reboots
 cat <<EOF | sudo tee /etc/sysctl.d/k8s.conf
-net.bridge.bridge-nf-call-iptables = 1
-net.bridge.bridge-nf-call-ip6tables = 1
 net.ipv4.ip_forward = 1
 EOF
 
 # apply sysctl params without reboot
 sudo sysctl --system
 
-lsmod | grep br_netfilter
-lsmod | grep overlay
-
-sysctl net.bridge.bridge-nf-call-iptables net.bridge.bridge-nf-call-ip6tables net.ipv4.ip_forward
+# verify that net.ipv4.ip_forward is set to 1
+sysctl net.ipv4.ip_forward
 
 # remove old docker
 for pkg in docker.io docker-doc docker-compose docker-compose-v2 podman-docker containerd runc; do sudo apt-get remove $pkg; done
@@ -61,7 +49,7 @@ echo 'deb [signed-by=/etc/apt/keyrings/kubernetes-apt-keyring.gpg] https://pkgs.
 sudo apt-get update
 
 # on control plane
-sudo apt-get install -y kubelet='1.30.8-*' kubeadm='1.30.8-*' kubectl='1.30.8-*'
+sudo apt-get install -y kubelet kubeadm kubectl
 sudo apt-mark hold kubelet kubeadm kubectl
 sudo systemctl enable --now kubelet
 sudo kubeadm init \
@@ -72,7 +60,7 @@ sudo kubeadm init \
 --skip-phases=addon/kube-proxy # if using Cilium CNI
 
 # on worker
-sudo apt-get install -y kubelet='1.30.8-*' kubeadm='1.30.8-*'
+sudo apt-get install -y kubelet kubeadm
 sudo apt-mark hold kubelet kubeadm
 sudo systemctl enable --now kubelet
 sudo kubeadm join <control-plane-host>:<control-plane-port> \

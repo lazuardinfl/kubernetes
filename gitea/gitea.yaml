@@ -22,8 +22,6 @@ metadata:
     app: gitea
     app.kubernetes.io/name: gitea
     app.kubernetes.io/instance: gitea
-    app.kubernetes.io/version: "1.21.11"
-    version: "1.21.11"
 spec:
   type: ClusterIP
   ports:
@@ -42,8 +40,6 @@ metadata:
     app: gitea
     app.kubernetes.io/name: gitea
     app.kubernetes.io/instance: gitea
-    app.kubernetes.io/version: "1.21.11"
-    version: "1.21.11"
 spec:
   type: ClusterIP
   ports:
@@ -62,8 +58,6 @@ metadata:
     app: gitea
     app.kubernetes.io/name: gitea
     app.kubernetes.io/instance: gitea
-    app.kubernetes.io/version: "1.21.11"
-    version: "1.21.11"
   annotations:
     secret.reloader.stakater.com/reload: "gitea-tls"
 spec:
@@ -83,15 +77,12 @@ spec:
         app: gitea
         app.kubernetes.io/name: gitea
         app.kubernetes.io/instance: gitea
-        app.kubernetes.io/version: "1.21.11"
-        version: "1.21.11"
     spec:
       securityContext:
         fsGroup: 1000
       initContainers:
         - name: init-directories
-          image: gitea/gitea:1.21.11-rootless
-          imagePullPolicy: IfNotPresent
+          image: gitea/gitea:1.23.4-rootless
           command: ["/usr/sbin/init_directory_structure.sh"]
           env:
             - name: GITEA_APP_INI
@@ -114,8 +105,7 @@ spec:
               cpu: 100m
               memory: 128Mi
         - name: init-app-ini
-          image: gitea/gitea:1.21.11-rootless
-          imagePullPolicy: IfNotPresent
+          image: gitea/gitea:1.23.4-rootless
           command: ["/usr/sbin/config_environment.sh"]
           env:
             - name: GITEA_APP_INI
@@ -143,9 +133,8 @@ spec:
               cpu: 100m
               memory: 128Mi
         - name: configure-gitea
-          image: gitea/gitea:1.21.11-rootless
+          image: gitea/gitea:1.23.4-rootless
           command: ["/usr/sbin/configure_gitea.sh"]
-          imagePullPolicy: IfNotPresent
           securityContext:
             runAsUser: 1000
           env:
@@ -169,6 +158,8 @@ spec:
                 secretKeyRef:
                   key: GITEA_ADMIN_PASSWORD
                   name: gitea-secret
+            - name: GITEA_ADMIN_PASSWORD_MODE
+              value: keepUpdated
           volumeMounts:
             - name: init
               mountPath: /usr/sbin
@@ -183,8 +174,7 @@ spec:
       terminationGracePeriodSeconds: 60
       containers:
         - name: gitea
-          image: gitea/gitea:1.21.11-rootless
-          imagePullPolicy: IfNotPresent
+          image: gitea/gitea:1.23.4-rootless
           env:
             - name: SSH_LISTEN_PORT
               value: "2222"
@@ -264,8 +254,6 @@ metadata:
     app: gitea
     app.kubernetes.io/name: gitea
     app.kubernetes.io/instance: gitea
-    app.kubernetes.io/version: "1.21.11"
-    version: "1.21.11"
   annotations:
     cert-manager.io/cluster-issuer: "issuer"
     haproxy.org/ssl-passthrough: "true"
@@ -295,8 +283,6 @@ metadata:
     app: gitea
     app.kubernetes.io/name: gitea
     app.kubernetes.io/instance: gitea
-    app.kubernetes.io/version: "1.21.11"
-    version: "1.21.11"
 spec:
   - name: gitea-ssh
     frontend:

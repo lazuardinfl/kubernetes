@@ -1,4 +1,24 @@
 gitea:
+  additionalConfigFromEnvs:
+    - name: GITEA__DATABASE__HOST
+      valueFrom:
+        secretKeyRef:
+          name: postgres-secret
+          key: host
+    - name: GITEA__DATABASE__PASSWD
+      valueFrom:
+        secretKeyRef:
+          name: postgres-secret
+          key: password
+  additionalConfigSources:
+    - secret:
+        secretName: gitea-app-ini-oauth
+    - configMap:
+        name: gitea-app-ini-plaintext
+  admin:
+    existingSecret: gitea-admin-secret
+    #username: admin_gitea
+    #password: pass
   config:
     APP_NAME: "Gitea"
     cache:
@@ -7,16 +27,17 @@ gitea:
       HOST: "redis://:password@redis.domain.com:6379/0?pool_size=100&idle_timeout=180s&"
     database:
       DB_TYPE: postgres
-      HOST: db.domain.com:5432
+      #HOST: db.domain.com:5432
       NAME: db_name
       USER: db_user
       #PASSWD: db_pass
     queue:
       TYPE: redis
-      CONN_STR: "redis://:password@redis.domain.com:6379/0?pool_size=100&idle_timeout=180s&"
+      #CONN_STR: "redis://:password@redis.domain.com:6379/0?pool_size=100&idle_timeout=180s&"
     session:
       PROVIDER: redis
       PROVIDER_CONFIG: "redis://:password@redis.domain.com:6379/0?pool_size=100&idle_timeout=180s&"
+  imageRegistry: "registry.domain.com"
 
 ingress:
   enabled: true
@@ -32,7 +53,7 @@ ingress:
       secretName: gitea-tls
 
 nodeSelector:
-  kubernetes.io/hostname: rpa-node2
+  kubernetes.io/hostname: node-name
 
 persistence:
   enabled: true
@@ -49,7 +70,7 @@ redis-cluster:
   enabled: false
 
 service:
-  http:
+  ssh:
     type: NodePort
-    nodePort: 30300
+    nodePort: 32000
     externalTrafficPolicy: Local

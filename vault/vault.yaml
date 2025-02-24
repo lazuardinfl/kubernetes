@@ -9,7 +9,7 @@ metadata:
 apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
 metadata:
-  name: reloader
+  name: vault-reloader
   labels:
     app.kubernetes.io/name: vault
     app.kubernetes.io/instance: vault
@@ -24,13 +24,13 @@ rules:
 apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
 metadata:
-  name: reloader
+  name: vault-reloader
   labels:
     app.kubernetes.io/name: vault
     app.kubernetes.io/instance: vault
 roleRef:
   kind: Role
-  name: reloader
+  name: vault-reloader
   apiGroup: rbac.authorization.k8s.io
 subjects:
 - kind: ServiceAccount
@@ -158,16 +158,14 @@ spec:
       serviceAccountName: vault
       initContainers:
         - name: reloader
-          image: alpine/k8s:1.28.7
-          imagePullPolicy: IfNotPresent
+          image: alpine/k8s:latest
           command: ["/bin/bash", "-c", "--"]
           args:
           - sleep 120;
             kubectl exec -it vault-0 -- pkill -SIGHUP vault;
       containers:
         - name: loop
-          image: alpine:3.18.5
-          imagePullPolicy: IfNotPresent
+          image: alpine:latest
           command: ["tail", "-f", "/dev/null"]
           resources: {}
 ---
@@ -232,8 +230,7 @@ spec:
           emptyDir: {}
       containers:
         - name: vault
-          image: hashicorp/vault:1.15.6
-          imagePullPolicy: IfNotPresent
+          image: hashicorp/vault:1.18.4
           command:
           - "/bin/sh"
           - "-ec"

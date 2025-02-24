@@ -4,10 +4,262 @@ metadata:
   name: nextcloud-config
   labels:
     app.kubernetes.io/name: nextcloud
+    app.kubernetes.io/instance: nextcloud
 data:
-  NC_DOMAIN: nextcloud.domain.com
-  OVERWRITEHOST: nextcloud.domain.com
-  TEMP_APPSTORE: http://url/to/temp/appstore
+  remoteip.conf: |-
+    RemoteIPHeader X-Forwarded-For
+    RemoteIPInternalProxy 10.0.0.0/8
+    RemoteIPInternalProxy 172.16.0.0/12
+    RemoteIPInternalProxy 192.168.0.0/16
+  other.config.php: |-
+    <?php
+    $CONFIG = array (
+      'skeletondirectory' => '',
+      'lost_password_link' => 'disabled',
+      'has_internet_connection' => false,
+      'simpleSignUpLink.shown' => false,
+    );
+  .htaccess: |-
+    # line below if for Apache 2.4
+    <ifModule mod_authz_core.c>
+    Require all denied
+    </ifModule>
+    # line below if for Apache 2.2
+    <ifModule !mod_authz_core.c>
+    deny from all
+    </ifModule>
+    # section for Apache 2.2 and 2.4
+    <ifModule mod_autoindex.c>
+    IndexIgnore *
+    </ifModule>
+  apache-pretty-urls.config.php: |-
+    <?php
+    $CONFIG = array (
+      'htaccess.RewriteBase' => '/',
+    );
+  apcu.config.php: |-
+    <?php
+    $CONFIG = array (
+      'memcache.local' => '\OC\Memcache\APCu',
+    );
+  apps.config.php: |-
+    <?php
+    $CONFIG = array (
+      'apps_paths' => array (
+          0 => array (
+                  'path'     => OC::$SERVERROOT.'/apps',
+                  'url'      => '/apps',
+                  'writable' => false,
+          ),
+          1 => array (
+                  'path'     => OC::$SERVERROOT.'/custom_apps',
+                  'url'      => '/custom_apps',
+                  'writable' => true,
+          ),
+      ),
+    );
+  autoconfig.php: |-
+    <?php
+    $autoconfig_enabled = false;
+    if (getenv('SQLITE_DATABASE')) {
+        $AUTOCONFIG["dbtype"] = "sqlite";
+        $AUTOCONFIG["dbname"] = getenv('SQLITE_DATABASE');
+        $autoconfig_enabled = true;
+    } elseif (getenv('MYSQL_DATABASE_FILE') && getenv('MYSQL_USER_FILE') && getenv('MYSQL_PASSWORD_FILE') && getenv('MYSQL_HOST')) {
+        $AUTOCONFIG['dbtype'] = 'mysql';
+        $AUTOCONFIG['dbname'] = trim(file_get_contents(getenv('MYSQL_DATABASE_FILE')));
+        $AUTOCONFIG['dbuser'] = trim(file_get_contents(getenv('MYSQL_USER_FILE')));
+        $AUTOCONFIG['dbpass'] = trim(file_get_contents(getenv('MYSQL_PASSWORD_FILE')));
+        $AUTOCONFIG['dbhost'] = getenv('MYSQL_HOST');
+        $autoconfig_enabled = true;
+    } elseif (getenv('MYSQL_DATABASE') && getenv('MYSQL_USER') && getenv('MYSQL_PASSWORD') && getenv('MYSQL_HOST')) {
+        $AUTOCONFIG["dbtype"] = "mysql";
+        $AUTOCONFIG["dbname"] = getenv('MYSQL_DATABASE');
+        $AUTOCONFIG["dbuser"] = getenv('MYSQL_USER');
+        $AUTOCONFIG["dbpass"] = getenv('MYSQL_PASSWORD');
+        $AUTOCONFIG["dbhost"] = getenv('MYSQL_HOST');
+        $autoconfig_enabled = true;
+    } elseif (getenv('POSTGRES_DB_FILE') && getenv('POSTGRES_USER_FILE') && getenv('POSTGRES_PASSWORD_FILE') && getenv('POSTGRES_HOST')) {
+        $AUTOCONFIG['dbtype'] = 'pgsql';
+        $AUTOCONFIG['dbname'] = trim(file_get_contents(getenv('POSTGRES_DB_FILE')));
+        $AUTOCONFIG['dbuser'] = trim(file_get_contents(getenv('POSTGRES_USER_FILE')));
+        $AUTOCONFIG['dbpass'] = trim(file_get_contents(getenv('POSTGRES_PASSWORD_FILE')));
+        $AUTOCONFIG['dbhost'] = getenv('POSTGRES_HOST');
+        $autoconfig_enabled = true;
+    } elseif (getenv('POSTGRES_DB') && getenv('POSTGRES_USER') && getenv('POSTGRES_PASSWORD') && getenv('POSTGRES_HOST')) {
+        $AUTOCONFIG["dbtype"] = "pgsql";
+        $AUTOCONFIG["dbname"] = getenv('POSTGRES_DB');
+        $AUTOCONFIG["dbuser"] = getenv('POSTGRES_USER');
+        $AUTOCONFIG["dbpass"] = getenv('POSTGRES_PASSWORD');
+        $AUTOCONFIG["dbhost"] = getenv('POSTGRES_HOST');
+        $autoconfig_enabled = true;
+    }
+    if ($autoconfig_enabled) {
+        $AUTOCONFIG["directory"] = getenv('NEXTCLOUD_DATA_DIR') ?: "/var/www/html/data";
+    }
+  redis.config.php: |-
+    <?php
+    if (getenv('REDIS_HOST')) {
+      $CONFIG = array(
+        'memcache.distributed' => '\OC\Memcache\Redis',
+        'memcache.locking' => '\OC\Memcache\Redis',
+        'redis' => array(
+          'host' => getenv('REDIS_HOST'),
+          'password' => getenv('REDIS_HOST_PASSWORD_FILE') ? trim(file_get_contents(getenv('REDIS_HOST_PASSWORD_FILE'))) : (string) getenv('REDIS_HOST_PASSWORD'),
+        ),
+      );
+    
+      if (getenv('REDIS_HOST_PORT') !== false) {
+        $CONFIG['redis']['port'] = (int) getenv('REDIS_HOST_PORT');
+      } elseif (getenv('REDIS_HOST')[0] != '/') {
+        $CONFIG['redis']['port'] = 6379;
+      }
+    }
+  reverse-proxy.config.php: |-
+    <?php
+    $overwriteHost = getenv('OVERWRITEHOST');
+    if ($overwriteHost) {
+      $CONFIG['overwritehost'] = $overwriteHost;
+    }
+    
+    $overwriteProtocol = getenv('OVERWRITEPROTOCOL');
+    if ($overwriteProtocol) {
+      $CONFIG['overwriteprotocol'] = $overwriteProtocol;
+    }
+    
+    $overwriteCliUrl = getenv('OVERWRITECLIURL');
+    if ($overwriteCliUrl) {
+      $CONFIG['overwrite.cli.url'] = $overwriteCliUrl;
+    }
+    
+    $overwriteWebRoot = getenv('OVERWRITEWEBROOT');
+    if ($overwriteWebRoot) {
+      $CONFIG['overwritewebroot'] = $overwriteWebRoot;
+    }
+    
+    $overwriteCondAddr = getenv('OVERWRITECONDADDR');
+    if ($overwriteCondAddr) {
+      $CONFIG['overwritecondaddr'] = $overwriteCondAddr;
+    }
+    
+    $trustedProxies = getenv('TRUSTED_PROXIES');
+    if ($trustedProxies) {
+      $CONFIG['trusted_proxies'] = array_filter(array_map('trim', explode(' ', $trustedProxies)));
+    }
+    
+    $forwardedForHeaders = getenv('FORWARDED_FOR_HEADERS');
+    if ($forwardedForHeaders) {
+      $CONFIG['forwarded_for_headers'] = array_filter(array_map('trim', explode(' ', $forwardedForHeaders)));
+    }
+  s3.config.php: |-
+    <?php
+    if (getenv('OBJECTSTORE_S3_BUCKET')) {
+      $use_ssl = getenv('OBJECTSTORE_S3_SSL');
+      $use_path = getenv('OBJECTSTORE_S3_USEPATH_STYLE');
+      $use_legacyauth = getenv('OBJECTSTORE_S3_LEGACYAUTH');
+      $autocreate = getenv('OBJECTSTORE_S3_AUTOCREATE');
+      $CONFIG = array(
+        'objectstore' => array(
+          'class' => '\OC\Files\ObjectStore\S3',
+          'arguments' => array(
+            'bucket' => getenv('OBJECTSTORE_S3_BUCKET'),
+            'region' => getenv('OBJECTSTORE_S3_REGION') ?: '',
+            'hostname' => getenv('OBJECTSTORE_S3_HOST') ?: '',
+            'port' => getenv('OBJECTSTORE_S3_PORT') ?: '',
+            'storageClass' => getenv('OBJECTSTORE_S3_STORAGE_CLASS') ?: '',
+            'objectPrefix' => getenv("OBJECTSTORE_S3_OBJECT_PREFIX") ? getenv("OBJECTSTORE_S3_OBJECT_PREFIX") : "urn:oid:",
+            'autocreate' => strtolower($autocreate) !== 'false',
+            'use_ssl' => strtolower($use_ssl) !== 'false',
+            // required for some non Amazon S3 implementations
+            'use_path_style' => $use_path == true && strtolower($use_path) !== 'false',
+            // required for older protocol versions
+            'legacy_auth' => $use_legacyauth == true && strtolower($use_legacyauth) !== 'false'
+          )
+        )
+      );
+    
+      if (getenv('OBJECTSTORE_S3_KEY_FILE')) {
+        $CONFIG['objectstore']['arguments']['key'] = trim(file_get_contents(getenv('OBJECTSTORE_S3_KEY_FILE')));
+      } elseif (getenv('OBJECTSTORE_S3_KEY')) {
+        $CONFIG['objectstore']['arguments']['key'] = getenv('OBJECTSTORE_S3_KEY');
+      } else {
+        $CONFIG['objectstore']['arguments']['key'] = '';
+      }
+    
+      if (getenv('OBJECTSTORE_S3_SECRET_FILE')) {
+        $CONFIG['objectstore']['arguments']['secret'] = trim(file_get_contents(getenv('OBJECTSTORE_S3_SECRET_FILE')));
+      } elseif (getenv('OBJECTSTORE_S3_SECRET')) {
+        $CONFIG['objectstore']['arguments']['secret'] = getenv('OBJECTSTORE_S3_SECRET');
+      } else {
+        $CONFIG['objectstore']['arguments']['secret'] = '';
+      }
+    
+      if (getenv('OBJECTSTORE_S3_SSE_C_KEY_FILE')) {
+        $CONFIG['objectstore']['arguments']['sse_c_key'] = trim(file_get_contents(getenv('OBJECTSTORE_S3_SSE_C_KEY_FILE')));
+      } elseif (getenv('OBJECTSTORE_S3_SSE_C_KEY')) {
+        $CONFIG['objectstore']['arguments']['sse_c_key'] = getenv('OBJECTSTORE_S3_SSE_C_KEY');
+      }
+    }
+  smtp.config.php: |-
+    <?php
+    if (getenv('SMTP_HOST') && getenv('MAIL_FROM_ADDRESS') && getenv('MAIL_DOMAIN')) {
+      $CONFIG = array (
+        'mail_smtpmode' => 'smtp',
+        'mail_smtphost' => getenv('SMTP_HOST'),
+        'mail_smtpport' => getenv('SMTP_PORT') ?: (getenv('SMTP_SECURE') ? 465 : 25),
+        'mail_smtpsecure' => getenv('SMTP_SECURE') ?: '',
+        'mail_smtpauth' => getenv('SMTP_NAME') && (getenv('SMTP_PASSWORD') || getenv('SMTP_PASSWORD_FILE')),
+        'mail_smtpauthtype' => getenv('SMTP_AUTHTYPE') ?: 'LOGIN',
+        'mail_smtpname' => getenv('SMTP_NAME') ?: '',
+        'mail_from_address' => getenv('MAIL_FROM_ADDRESS'),
+        'mail_domain' => getenv('MAIL_DOMAIN'),
+      );
+    
+      if (getenv('SMTP_PASSWORD_FILE')) {
+          $CONFIG['mail_smtppassword'] = trim(file_get_contents(getenv('SMTP_PASSWORD_FILE')));
+      } elseif (getenv('SMTP_PASSWORD')) {
+          $CONFIG['mail_smtppassword'] = getenv('SMTP_PASSWORD');
+      } else {
+          $CONFIG['mail_smtppassword'] = '';
+      }
+    }
+  swift.config.php: |-
+    <?php
+    if (getenv('OBJECTSTORE_SWIFT_URL')) {
+        $autocreate = getenv('OBJECTSTORE_SWIFT_AUTOCREATE');
+      $CONFIG = array(
+        'objectstore' => [
+          'class' => 'OC\\Files\\ObjectStore\\Swift',
+          'arguments' => [
+            'autocreate' => $autocreate == true && strtolower($autocreate) !== 'false',
+            'user' => [
+              'name' => getenv('OBJECTSTORE_SWIFT_USER_NAME'),
+              'password' => getenv('OBJECTSTORE_SWIFT_USER_PASSWORD'),
+              'domain' => [
+                'name' => (getenv('OBJECTSTORE_SWIFT_USER_DOMAIN')) ?: 'Default',
+              ],
+            ],
+            'scope' => [
+              'project' => [
+                'name' => getenv('OBJECTSTORE_SWIFT_PROJECT_NAME'),
+                'domain' => [
+                  'name' => (getenv('OBJECTSTORE_SWIFT_PROJECT_DOMAIN')) ?: 'Default',
+                ],
+              ],
+            ],
+            'serviceName' => (getenv('OBJECTSTORE_SWIFT_SERVICE_NAME')) ?: 'swift',
+            'region' => getenv('OBJECTSTORE_SWIFT_REGION'),
+            'url' => getenv('OBJECTSTORE_SWIFT_URL'),
+            'bucket' => getenv('OBJECTSTORE_SWIFT_CONTAINER_NAME'),
+          ]
+        ]
+      );
+    }
+  upgrade-disable-web.config.php: |-
+    <?php
+    $CONFIG = array (
+      'upgrade.disable-web' => true,
+    );
 ---
 apiVersion: v1
 kind: Secret
@@ -15,6 +267,7 @@ metadata:
   name: nextcloud-secret
   labels:
     app.kubernetes.io/name: nextcloud
+    app.kubernetes.io/instance: nextcloud
   annotations:
     avp.kubernetes.io/path: "secret/data/system/nextcloud"
 type: Opaque
@@ -25,8 +278,8 @@ data:
   POSTGRES_PASSWORD: <postgres_password | base64encode>
   REDIS_HOST: <redis_host | base64encode>
   REDIS_HOST_PASSWORD: <redis_host_password | base64encode>
-  ADMIN_USER: <admin_user | base64encode>
-  ADMIN_PASSWORD: <admin_password | base64encode>
+  NEXTCLOUD_ADMIN_USER: <admin_user | base64encode>
+  NEXTCLOUD_ADMIN_PASSWORD: <admin_password | base64encode>
 ---
 apiVersion: v1
 kind: PersistentVolumeClaim
@@ -34,6 +287,8 @@ metadata:
   name: nextcloud-pvc
   labels:
     app.kubernetes.io/name: nextcloud
+    app.kubernetes.io/instance: nextcloud
+    app.kubernetes.io/component: app
   annotations:
     argocd.argoproj.io/sync-options: Delete=false
 spec:
@@ -47,55 +302,268 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
+  name: nextcloud
   labels:
-    app.kubernetes.io/name: nextcloud-aio-apache
-  name: nextcloud-aio-apache
+    app.kubernetes.io/name: nextcloud
+    app.kubernetes.io/instance: nextcloud
+    app.kubernetes.io/component: app
 spec:
   type: ClusterIP
-  ipFamilyPolicy: PreferDualStack
   ports:
-    - name: "11000"
-      port: 11000
-      targetPort: 11000
-    - name: 11000-udp
-      port: 11000
-      protocol: UDP
-      targetPort: 11000
+    - port: 8080
+      targetPort: 80
+      protocol: TCP
+      name: http
   selector:
-    app.kubernetes.io/name: nextcloud-aio-apache
+    app.kubernetes.io/name: nextcloud
+    app.kubernetes.io/instance: nextcloud
+    app.kubernetes.io/component: app
 ---
-apiVersion: v1
-kind: Service
+apiVersion: apps/v1
+kind: Deployment
 metadata:
+  name: nextcloud
   labels:
-    app.kubernetes.io/name: nextcloud-aio-imaginary
-  name: nextcloud-aio-imaginary
+    app.kubernetes.io/name: nextcloud
+    app.kubernetes.io/instance: nextcloud
+    app.kubernetes.io/component: app
+  annotations:
+    configmap.reloader.stakater.com/reload: nextcloud-config
+    secret.reloader.stakater.com/reload: nextcloud-secret
 spec:
-  ipFamilyPolicy: PreferDualStack
-  ports:
-    - name: "9000"
-      port: 9000
-      targetPort: 9000
+  replicas: 1
+  strategy:
+    type: Recreate
   selector:
-    app.kubernetes.io/name: nextcloud-aio-imaginary
----
-apiVersion: v1
-kind: Service
-metadata:
-  labels:
-    app.kubernetes.io/name: nextcloud-aio-nextcloud
-  name: nextcloud-aio-nextcloud
-spec:
-  ipFamilyPolicy: PreferDualStack
-  ports:
-    - name: "9000"
-      port: 9000
-      targetPort: 9000
-    - name: "9001"
-      port: 9001
-      targetPort: 9001
-  selector:
-    app.kubernetes.io/name: nextcloud-aio-nextcloud
+    matchLabels:
+      app.kubernetes.io/name: nextcloud
+      app.kubernetes.io/instance: nextcloud
+      app.kubernetes.io/component: app
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: nextcloud
+        app.kubernetes.io/instance: nextcloud
+        app.kubernetes.io/component: app
+    spec:
+      initContainers:
+        - name: init
+          image: nextcloud:30.0.6-apache
+          command: ["bash", "-c"]
+          args:
+          - update-ca-certificates;
+            cp /etc/ssl/certs/ca-certificates.crt /custom-ca/;
+            chmod 644 /custom-ca/ca-certificates.crt;
+          securityContext:
+            runAsUser: 0
+          volumeMounts:
+            - name: private-ca
+              mountPath: /usr/local/share/ca-certificates/ca.crt
+              subPath: ca.crt
+              readOnly: true
+            - name: ca
+              mountPath: /custom-ca
+      containers:
+        - name: nextcloud
+          image: nextcloud:30.0.6-apache
+          env:
+            - name: OVERWRITEPROTOCOL
+              value: "https"
+            - name: NEXTCLOUD_TRUSTED_DOMAINS
+              value: "nextcloud.domain.com"
+            - name: NEXTCLOUD_DATA_DIR
+              value: "/var/www/html/data"
+            - name: TRUSTED_PROXIES
+              value: "10.0.0.0/8 172.16.0.0/12 192.168.0.0/16"
+          envFrom:
+            - secretRef:
+                name: nextcloud-secret
+          ports:
+            - name: http
+              containerPort: 80
+              protocol: TCP
+          livenessProbe:
+            httpGet:
+              path: /status.php
+              port:  80
+              httpHeaders:
+              - name: Host
+                value: "localhost"
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            timeoutSeconds: 5
+            successThreshold: 1
+            failureThreshold: 3
+          readinessProbe:
+            httpGet:
+              path: /status.php
+              port:  80
+              httpHeaders:
+              - name: Host
+                value: "localhost"
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            timeoutSeconds: 5
+            successThreshold: 1
+            failureThreshold: 3
+          volumeMounts:
+            - name: nextcloud-main
+              mountPath: /var/www/
+              subPath: root
+            - name: nextcloud-main
+              mountPath: /var/www/html
+              subPath: html
+            - name: nextcloud-main
+              mountPath: /var/www/html/data
+              subPath: data
+            - name: nextcloud-main
+              mountPath: /var/www/html/config
+              subPath: config
+            - name: nextcloud-main
+              mountPath: /var/www/html/custom_apps
+              subPath: custom_apps
+            - name: nextcloud-main
+              mountPath: /var/www/tmp
+              subPath: tmp
+            - name: nextcloud-main
+              mountPath: /var/www/html/themes
+              subPath: themes
+            - name: nextcloud-config
+              mountPath: /var/www/html/config/other.config.php
+              subPath: other.config.php
+            - name: nextcloud-config
+              mountPath: /var/www/html/config/.htaccess
+              subPath: .htaccess
+            - name: nextcloud-config
+              mountPath: /var/www/html/config/apache-pretty-urls.config.php
+              subPath: apache-pretty-urls.config.php
+            - name: nextcloud-config
+              mountPath: /var/www/html/config/apcu.config.php
+              subPath: apcu.config.php
+            - name: nextcloud-config
+              mountPath: /var/www/html/config/apps.config.php
+              subPath: apps.config.php
+            - name: nextcloud-config
+              mountPath: /var/www/html/config/autoconfig.php
+              subPath: autoconfig.php
+            - name: nextcloud-config
+              mountPath: /var/www/html/config/redis.config.php
+              subPath: redis.config.php
+            - name: nextcloud-config
+              mountPath: /var/www/html/config/reverse-proxy.config.php
+              subPath: reverse-proxy.config.php
+            - name: nextcloud-config
+              mountPath: /var/www/html/config/s3.config.php
+              subPath: s3.config.php
+            - name: nextcloud-config
+              mountPath: /var/www/html/config/smtp.config.php
+              subPath: smtp.config.php
+            - name: nextcloud-config
+              mountPath: /var/www/html/config/swift.config.php
+              subPath: swift.config.php
+            - name: nextcloud-config
+              mountPath: /var/www/html/config/upgrade-disable-web.config.php
+              subPath: upgrade-disable-web.config.php
+            - name: nextcloud-config
+              mountPath: /etc/apache2/conf-available/remoteip.conf
+              subPath: remoteip.conf
+            - name: ca
+              mountPath: /etc/ssl/certs/ca-certificates.crt
+              subPath: ca-certificates.crt
+          resources: {}
+        - name: nextcloud-cron
+          image: nextcloud:30.0.6-apache
+          command:
+            - /cron.sh
+          env:
+            - name: OVERWRITEPROTOCOL
+              value: "https"
+            - name: NEXTCLOUD_TRUSTED_DOMAINS
+              value: "nextcloud.domain.com"
+            - name: NEXTCLOUD_DATA_DIR
+              value: "/var/www/html/data"
+            - name: TRUSTED_PROXIES
+              value: "10.0.0.0/8 172.16.0.0/12 192.168.0.0/16"
+          envFrom:
+            - secretRef:
+                name: nextcloud-secret
+          volumeMounts:
+            - name: nextcloud-main
+              mountPath: /var/www/
+              subPath: root
+            - name: nextcloud-main
+              mountPath: /var/www/html
+              subPath: html
+            - name: nextcloud-main
+              mountPath: /var/www/html/data
+              subPath: data
+            - name: nextcloud-main
+              mountPath: /var/www/html/config
+              subPath: config
+            - name: nextcloud-main
+              mountPath: /var/www/html/custom_apps
+              subPath: custom_apps
+            - name: nextcloud-main
+              mountPath: /var/www/tmp
+              subPath: tmp
+            - name: nextcloud-main
+              mountPath: /var/www/html/themes
+              subPath: themes
+            - name: nextcloud-config
+              mountPath: /var/www/html/config/other.config.php
+              subPath: other.config.php
+            - name: nextcloud-config
+              mountPath: /var/www/html/config/.htaccess
+              subPath: .htaccess
+            - name: nextcloud-config
+              mountPath: /var/www/html/config/apache-pretty-urls.config.php
+              subPath: apache-pretty-urls.config.php
+            - name: nextcloud-config
+              mountPath: /var/www/html/config/apcu.config.php
+              subPath: apcu.config.php
+            - name: nextcloud-config
+              mountPath: /var/www/html/config/apps.config.php
+              subPath: apps.config.php
+            - name: nextcloud-config
+              mountPath: /var/www/html/config/autoconfig.php
+              subPath: autoconfig.php
+            - name: nextcloud-config
+              mountPath: /var/www/html/config/redis.config.php
+              subPath: redis.config.php
+            - name: nextcloud-config
+              mountPath: /var/www/html/config/reverse-proxy.config.php
+              subPath: reverse-proxy.config.php
+            - name: nextcloud-config
+              mountPath: /var/www/html/config/s3.config.php
+              subPath: s3.config.php
+            - name: nextcloud-config
+              mountPath: /var/www/html/config/smtp.config.php
+              subPath: smtp.config.php
+            - name: nextcloud-config
+              mountPath: /var/www/html/config/swift.config.php
+              subPath: swift.config.php
+            - name: nextcloud-config
+              mountPath: /var/www/html/config/upgrade-disable-web.config.php
+              subPath: upgrade-disable-web.config.php
+            - name: ca
+              mountPath: /etc/ssl/certs/ca-certificates.crt
+              subPath: ca-certificates.crt
+          resources: {}
+      volumes:
+        - name: nextcloud-main
+          persistentVolumeClaim:
+            claimName: nextcloud-pvc
+        - name: nextcloud-config
+          configMap:
+            name: nextcloud-config
+        - name: private-ca
+          secret:
+            secretName: private-ca
+        - name: ca
+          emptyDir: {}
+      securityContext:
+        # Will mount configuration files as www-data (id: 33) for nextcloud
+        fsGroup: 33
 ---
 apiVersion: networking.k8s.io/v1
 kind: Ingress
@@ -103,8 +571,12 @@ metadata:
   name: nextcloud-ingress
   labels:
     app.kubernetes.io/name: nextcloud
+    app.kubernetes.io/instance: nextcloud
+    app.kubernetes.io/component: app
   annotations:
     cert-manager.io/cluster-issuer: "issuer"
+    haproxy.org/response-set-header: |
+      Strict-Transport-Security "max-age=15552000"
 spec:
   ingressClassName: haproxy
   tls:
@@ -115,10 +587,10 @@ spec:
   - host: nextcloud.domain.com
     http:
       paths:
-      - path: /
-        pathType: Prefix
-        backend:
-          service:
-            name: nextcloud-aio-apache
-            port:
-              number: 11000
+        - path: /
+          pathType: Prefix
+          backend:
+            service:
+              name: nextcloud
+              port:
+                number: 8080

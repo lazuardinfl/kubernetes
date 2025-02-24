@@ -70,8 +70,7 @@ spec:
     spec:
       containers:
         - name: openldap
-          image: bitnami/openldap:2.5.16
-          imagePullPolicy: Always
+          image: bitnami/openldap:2.6.9
           env:
             - name: LDAP_ADD_SCHEMAS
               value: "yes"

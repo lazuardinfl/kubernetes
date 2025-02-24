@@ -1,3 +1,5 @@
+# Kubernetes Bootstrap
+
 kubernetes bootstrap on bare metal
 - all cluster node has ip not behind nat
 - cni without encryption

@@ -2,11 +2,13 @@ apiVersion: v1
 kind: ServiceAccount
 metadata:
   annotations:
-    app.quarkus.io/build-timestamp: 2024-02-22 - 09:11:46 +0000
+    app.quarkus.io/quarkus-version: 3.15.3
+    app.quarkus.io/vcs-uri: https://github.com/keycloak/keycloak.git
+    app.quarkus.io/build-timestamp: 2025-02-11 - 08:56:47 +0000
   labels:
-    app.kubernetes.io/managed-by: quarkus
     app.kubernetes.io/name: keycloak-operator
-    app.kubernetes.io/version: 23.0.7
+    app.kubernetes.io/version: 26.1.2
+    app.kubernetes.io/managed-by: quarkus
   name: keycloak-operator
 ---
 apiVersion: rbac.authorization.k8s.io/v1
@@ -45,32 +47,13 @@ rules:
     resources:
       - secrets
     verbs:
-      - get
-      - list
-      - watch
-      - patch
-      - update
-      - delete
-      - create
----
-apiVersion: rbac.authorization.k8s.io/v1
-kind: ClusterRole
-metadata:
-  name: watchedsecretscontroller-cluster-role
-rules:
-  - apiGroups:
-      - ""
-    resources:
-      - secrets
-      - secrets/finalizers
-    verbs:
-      - get
-      - list
-      - watch
-      - patch
-      - update
       - create
       - delete
+      - get
+      - list
+      - patch
+      - update
+      - watch
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
@@ -96,60 +79,47 @@ rules:
     resources:
       - services
     verbs:
+      - create
+      - delete
       - get
       - list
-      - watch
       - patch
       - update
-      - delete
-      - create
-  - apiGroups:
-      - apps
-    resources:
-      - statefulsets
-    verbs:
-      - get
-      - list
       - watch
-      - patch
-      - update
-      - delete
-      - create
-  - apiGroups:
-      - ""
-    resources:
-      - services
-    verbs:
-      - get
-      - list
-      - watch
-      - patch
-      - update
-      - delete
-      - create
   - apiGroups:
       - networking.k8s.io
     resources:
       - ingresses
     verbs:
+      - create
+      - delete
       - get
       - list
-      - watch
       - patch
       - update
-      - delete
-      - create
+      - watch
   - apiGroups:
       - ""
     resources:
       - secrets
     verbs:
+      - create
+      - delete
       - get
       - list
       - watch
-      - delete
+  - apiGroups:
+      - networking.k8s.io
+    resources:
+      - networkpolicies
+    verbs:
       - create
+      - delete
+      - get
+      - list
       - patch
+      - update
+      - watch
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
@@ -164,7 +134,6 @@ roleRef:
 subjects:
   - kind: ServiceAccount
     name: keycloak-operator
-    namespace: keycloak
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
@@ -183,6 +152,14 @@ rules:
       - delete
       - patch
       - update
+  - apiGroups:
+      - ""
+    resources:
+      - configmaps
+    verbs:
+      - get
+      - list
+      - watch
   - apiGroups:
       - ""
     resources:
@@ -256,18 +233,6 @@ subjects:
 apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
 metadata:
-  name: watchedsecretscontroller-role-binding
-roleRef:
-  kind: ClusterRole
-  apiGroup: rbac.authorization.k8s.io
-  name: watchedsecretscontroller-cluster-role
-subjects:
-  - kind: ServiceAccount
-    name: keycloak-operator
----
-apiVersion: rbac.authorization.k8s.io/v1
-kind: RoleBinding
-metadata:
   name: keycloakcontroller-role-binding
 roleRef:
   kind: ClusterRole
@@ -280,6 +245,9 @@ subjects:
 apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
 metadata:
+  labels:
+    app.kubernetes.io/name: keycloak-operator
+    app.kubernetes.io/version: 26.1.2
   name: keycloak-operator-view
 roleRef:
   kind: ClusterRole
@@ -293,10 +261,12 @@ apiVersion: v1
 kind: Service
 metadata:
   annotations:
-    app.quarkus.io/build-timestamp: 2024-02-22 - 09:11:46 +0000
+    app.quarkus.io/quarkus-version: 3.15.3
+    app.quarkus.io/vcs-uri: https://github.com/keycloak/keycloak.git
+    app.quarkus.io/build-timestamp: 2025-02-11 - 08:56:47 +0000
   labels:
     app.kubernetes.io/name: keycloak-operator
-    app.kubernetes.io/version: 23.0.7
+    app.kubernetes.io/version: 26.1.2
     app.kubernetes.io/managed-by: quarkus
   name: keycloak-operator
 spec:
@@ -307,33 +277,35 @@ spec:
       targetPort: 8080
   selector:
     app.kubernetes.io/name: keycloak-operator
-    app.kubernetes.io/version: 23.0.7
   type: ClusterIP
 ---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
   annotations:
-    app.quarkus.io/build-timestamp: 2024-02-22 - 09:11:46 +0000
+    app.quarkus.io/quarkus-version: 3.15.3
+    app.quarkus.io/vcs-uri: https://github.com/keycloak/keycloak.git
+    app.quarkus.io/build-timestamp: 2025-02-11 - 08:56:47 +0000
   labels:
-    app.kubernetes.io/managed-by: quarkus
     app.kubernetes.io/name: keycloak-operator
-    app.kubernetes.io/version: 23.0.7
+    app.kubernetes.io/version: 26.1.2
+    app.kubernetes.io/managed-by: quarkus
   name: keycloak-operator
 spec:
   replicas: 1
   selector:
     matchLabels:
       app.kubernetes.io/name: keycloak-operator
-      app.kubernetes.io/version: 23.0.7
   template:
     metadata:
       annotations:
-        app.quarkus.io/build-timestamp: 2024-02-22 - 09:11:46 +0000
+        app.quarkus.io/quarkus-version: 3.15.3
+        app.quarkus.io/vcs-uri: https://github.com/keycloak/keycloak.git
+        app.quarkus.io/build-timestamp: 2025-02-11 - 08:56:47 +0000
       labels:
         app.kubernetes.io/managed-by: quarkus
+        app.kubernetes.io/version: 26.1.2
         app.kubernetes.io/name: keycloak-operator
-        app.kubernetes.io/version: 23.0.7
     spec:
       containers:
         - env:
@@ -342,9 +314,8 @@ spec:
                 fieldRef:
                   fieldPath: metadata.namespace
             - name: RELATED_IMAGE_KEYCLOAK
-              value: quay.io/keycloak/keycloak:23.0.7
-          image: quay.io/keycloak/keycloak-operator:23.0.7
-          imagePullPolicy: Always
+              value: quay.io/keycloak/keycloak:26.1.2
+          image: quay.io/keycloak/keycloak-operator:26.1.2
           livenessProbe:
             failureThreshold: 3
             httpGet:
@@ -360,7 +331,6 @@ spec:
             - containerPort: 8080
               name: http
               protocol: TCP
-          resources: {}
           readinessProbe:
             failureThreshold: 3
             httpGet:
@@ -371,6 +341,13 @@ spec:
             periodSeconds: 10
             successThreshold: 1
             timeoutSeconds: 10
+          resources:
+            limits:
+              cpu: 700m
+              memory: 450Mi
+            requests:
+              cpu: 300m
+              memory: 450Mi
           startupProbe:
             failureThreshold: 3
             httpGet:

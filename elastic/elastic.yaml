@@ -43,3 +43,47 @@ spec:
         resources:
           requests:
             storage: 1G
+---
+apiVersion: kibana.k8s.elastic.co/v1
+kind: Kibana
+metadata:
+  name: kibana
+spec:
+  version: 8.17.3
+  count: 1
+  elasticsearchRef:
+    name: elasticsearch
+  config:
+    server.publicBaseUrl: https://kibana.domain.com
+  podTemplate:
+    spec:
+      containers:
+      - name: kibana
+        resources:
+          limits:
+            memory: 1.5Gi
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: kibana-ingress
+  annotations:
+    cert-manager.io/cluster-issuer: "issuer"
+    haproxy.org/server-ssl: "true"
+spec:
+  ingressClassName: haproxy
+  tls:
+    - hosts:
+        - kibana.domain.com
+      secretName: kibana-tls
+  rules:
+  - host: kibana.domain.com
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: kibana-kb-http
+            port:
+              number: 5601

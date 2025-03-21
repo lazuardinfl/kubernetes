@@ -63,6 +63,63 @@ spec:
           limits:
             memory: 1.5Gi
 ---
+apiVersion: logstash.k8s.elastic.co/v1alpha1
+kind: Logstash
+metadata:
+  name: logstash
+spec:
+  version: 8.17.3
+  count: 1
+  elasticsearchRefs:
+  - name: elasticsearch
+    clusterName: elastic
+  pipelines:
+  - pipeline.id: main
+    config.string: |
+      input {
+        beats {
+          port => 5044
+        }
+      }
+      output {
+        elasticsearch {
+          hosts => ["${ELASTIC_ES_HOSTS}"]
+          user => "${ELASTIC_ES_USER}"
+          password => "${ELASTIC_ES_PASSWORD}"
+          ssl_certificate_authorities => "${ELASTIC_ES_SSL_CERTIFICATE_AUTHORITY}"
+        }
+      }
+  podTemplate:
+    spec:
+      containers:
+      - name: logstash
+        env:
+        - name: LS_JAVA_OPTS
+          value: "-Xms2g -Xmx2g"
+        resources:
+          limits:
+            memory: 3Gi
+  volumeClaimTemplates:
+  - metadata:
+      name: logstash-data
+    spec:
+      storageClassName: openebs-local
+      accessModes:
+      - ReadWriteOnce
+      resources:
+        requests:
+          storage: 1G
+  services:
+  - name: beats
+    service:
+      spec:
+        type: ClusterIP
+        ports:
+        - port: 5044
+          name: beats
+          protocol: TCP
+          targetPort: 5044
+---
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
@@ -87,3 +144,19 @@ spec:
             name: kibana-kb-http
             port:
               number: 5601
+---
+apiVersion: ingress.v1.haproxy.org/v1
+kind: TCP
+metadata:
+  name: elastic-tcp
+spec:
+  - name: logstash-beats
+    frontend:
+      name: logstash-beats
+      tcplog: true
+      binds:
+        - name: logstash-beats
+          port: 5044
+    service:
+      name: logstash-ls-beats
+      port: 5044

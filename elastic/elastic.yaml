@@ -1,4 +1,51 @@
 apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: elastic-beats
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: elastic-beats
+rules:
+- apiGroups: [""]
+  resources:
+  - namespaces
+  - nodes
+  - pods
+  - events
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups: ["apps"]
+  resources:
+  - replicasets
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups: ["batch"]
+  resources:
+  - jobs
+  verbs:
+  - get
+  - list
+  - watch
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: elastic-beats
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: elastic-beats
+subjects:
+- kind: ServiceAccount
+  name: elastic-beats
+---
+apiVersion: v1
 kind: Secret
 metadata:
   name: elastic-admin-auth
@@ -26,13 +73,13 @@ spec:
         - name: elasticsearch
           resources:
             limits:
-              memory: 4Gi
+              memory: 6Gi
         initContainers:
         - name: sysctl
+          command: ["sh", "-c", "sysctl -w vm.max_map_count=262144"]
           securityContext:
-            privileged: true
             runAsUser: 0
-          command: ['sh', '-c', 'sysctl -w vm.max_map_count=262144']
+            privileged: true
     volumeClaimTemplates:
     - metadata:
         name: elasticsearch-data
@@ -82,11 +129,28 @@ spec:
         }
       }
       output {
-        elasticsearch {
-          hosts => ["${ELASTIC_ES_HOSTS}"]
-          user => "${ELASTIC_ES_USER}"
-          password => "${ELASTIC_ES_PASSWORD}"
-          ssl_certificate_authorities => "${ELASTIC_ES_SSL_CERTIFICATE_AUTHORITY}"
+        if [@metadata][beat] == "filebeat" {
+          elasticsearch {
+            hosts => ["${ELASTIC_ES_HOSTS}"]
+            user => "${ELASTIC_ES_USER}"
+            password => "${ELASTIC_ES_PASSWORD}"
+            ssl_certificate_authorities => "${ELASTIC_ES_SSL_CERTIFICATE_AUTHORITY}"
+            ilm_enabled => true
+            ilm_rollover_alias => "logstash-filebeat"
+            ilm_pattern => "000001"
+            ilm_policy => "7-days@lifecycle"
+          }
+        } else if [@metadata][beat] == "packetbeat" {
+          elasticsearch {
+            hosts => ["${ELASTIC_ES_HOSTS}"]
+            user => "${ELASTIC_ES_USER}"
+            password => "${ELASTIC_ES_PASSWORD}"
+            ssl_certificate_authorities => "${ELASTIC_ES_SSL_CERTIFICATE_AUTHORITY}"
+            ilm_enabled => true
+            ilm_rollover_alias => "logstash-packetbeat"
+            ilm_pattern => "000001"
+            ilm_policy => "7-days@lifecycle"
+          }
         }
       }
   podTemplate:
@@ -98,7 +162,7 @@ spec:
           value: "-Xms2g -Xmx2g"
         resources:
           limits:
-            memory: 3Gi
+            memory: 4Gi
   volumeClaimTemplates:
   - metadata:
       name: logstash-data
@@ -120,6 +184,120 @@ spec:
           protocol: TCP
           targetPort: 5044
 ---
+apiVersion: beat.k8s.elastic.co/v1beta1
+kind: Beat
+metadata:
+  name: filebeat
+spec:
+  type: filebeat
+  version: 8.17.3
+  config:
+    filebeat.autodiscover.providers:
+    - type: kubernetes
+      node: ${NODE_NAME}
+      hints:
+        enabled: true
+        default_config:
+          type: container
+          paths:
+          - /var/log/containers/*${data.kubernetes.container.id}.log
+          json.ignore_decoding_error: true
+    filebeat.modules:
+    - module: system
+      syslog:
+        enabled: true
+      auth:
+        enabled: true
+    processors:
+    - add_host_metadata: {}
+    output.logstash:
+      hosts: ["logstash-ls-beats:5044"]
+  daemonSet:
+    podTemplate:
+      spec:
+        serviceAccount: elastic-beats
+        automountServiceAccountToken: true
+        dnsPolicy: ClusterFirstWithHostNet
+        hostNetwork: true
+        containers:
+        - name: filebeat
+          env:
+          - name: NODE_NAME
+            valueFrom:
+              fieldRef:
+                fieldPath: spec.nodeName
+          securityContext:
+            runAsUser: 0
+          resources:
+            limits:
+              memory: 300Mi
+          volumeMounts:
+          - name: varlog
+            mountPath: /var/log
+            readOnly: true
+        volumes:
+        - name: varlog
+          hostPath:
+            path: /var/log
+---
+apiVersion: beat.k8s.elastic.co/v1beta1
+kind: Beat
+metadata:
+  name: packetbeat
+spec:
+  type: packetbeat
+  version: 8.17.3
+  config:
+    packetbeat.interfaces.device: any
+    packetbeat.interfaces.type: af_packet
+    packetbeat.procs.enabled: true
+    packetbeat.protocols:
+    - type: icmp
+      enabled: true
+    - type: dns
+      ports: [53]
+      include_authorities: true
+      include_additionals: true
+    - type: http
+      ports: [80, 3000, 5044, 8000, 8080]
+      real_ip_header: "X-Forwarded-For"
+    - type: tls
+      ports: [443, 636, 1636, 5601, 6443, 8200, 8443, 9200]
+    - type: pgsql
+      ports: [5432]
+    - type: redis
+      ports: [6379]
+    packetbeat.flows:
+      timeout: 30s
+      period: 10s
+    processors:
+    - add_host_metadata: {}
+    - add_kubernetes_metadata: {}
+    output.logstash:
+      hosts: ["logstash-ls-beats:5044"]
+  daemonSet:
+    podTemplate:
+      spec:
+        serviceAccount: elastic-beats
+        automountServiceAccountToken: true
+        dnsPolicy: ClusterFirstWithHostNet
+        hostNetwork: true
+        containers:
+        - name: packetbeat
+          env:
+          - name: NODE_NAME
+            valueFrom:
+              fieldRef:
+                fieldPath: spec.nodeName
+          securityContext:
+            runAsUser: 0
+            capabilities:
+              add:
+              - NET_ADMIN
+          resources:
+            limits:
+              memory: 400Mi
+---
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
@@ -130,9 +308,9 @@ metadata:
 spec:
   ingressClassName: haproxy
   tls:
-    - hosts:
-        - kibana.domain.com
-      secretName: kibana-tls
+  - hosts:
+    - kibana.domain.com
+    secretName: kibana-tls
   rules:
   - host: kibana.domain.com
     http:
@@ -150,13 +328,13 @@ kind: TCP
 metadata:
   name: elastic-tcp
 spec:
-  - name: logstash-beats
-    frontend:
-      name: logstash-beats
-      tcplog: true
-      binds:
-        - name: logstash-beats
-          port: 5044
-    service:
-      name: logstash-ls-beats
+- name: logstash-beats
+  frontend:
+    name: logstash-beats
+    tcplog: true
+    binds:
+    - name: logstash-beats
       port: 5044
+  service:
+    name: logstash-ls-beats
+    port: 5044

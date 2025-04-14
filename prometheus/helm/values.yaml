@@ -1,0 +1,86 @@
+namespaceOverride: prometheus
+
+global:
+  imageRegistry: <registry.domain.com>
+
+alertmanager:
+  alertmanagerSpec:
+    nodeSelector:
+      kubernetes.io/hostname: <node hostname>
+
+grafana:
+  namespaceOverride: prometheus
+  defaultDashboardsTimezone: browser
+  adminUser: <user>
+  adminPassword: <password>
+  ingress:
+    enabled: true
+    ingressClassName: <ingress class>
+    annotations:
+      cert-manager.io/cluster-issuer: <issuer>
+    hosts:
+      - <grafana.domain.com>
+    tls:
+    - secretName: prometheus-grafana-tls
+      hosts:
+        - <grafana.domain.com>
+  persistence:
+    enabled: true
+    storageClassName: openebs-local
+    accessModes:
+      - ReadWriteOnce
+    size: 1G
+  nodeSelector:
+    kubernetes.io/hostname: <node hostname>
+  grafana.ini:
+    feature_toggles:
+      enable: ssoSettingsLDAP
+    users:
+      auto_assign_org_role: None
+
+kube-state-metrics:
+  namespaceOverride: prometheus
+  nodeSelector:
+    kubernetes.io/hostname: <node hostname>
+
+prometheus-node-exporter:
+  namespaceOverride: prometheus
+
+prometheusOperator:
+  admissionWebhooks:
+    deployment:
+      image:
+        repository: <prometheus/admission-webhook>
+    patch:
+      image:
+        repository: <nginx/kube-webhook-certgen>
+      nodeSelector:
+        kubernetes.io/hostname: <node hostname>
+  image:
+    repository: <prometheus/prometheus-operator>
+  nodeSelector:
+    kubernetes.io/hostname: <node hostname>
+  prometheusConfigReloader:
+    image:
+      repository: <prometheus/prometheus-config-reloader>
+
+prometheus:
+  prometheusSpec:
+    nodeSelector:
+      kubernetes.io/hostname: <node hostname>
+    retention: 30d
+    storageSpec:
+      volumeClaimTemplate:
+        metadata:
+          name: prometheus
+        spec:
+          storageClassName: openebs-local
+          accessModes: ["ReadWriteOnce"]
+          resources:
+            requests:
+              storage: 1G
+
+thanos:
+  thanosRulerSpec:
+    nodeSelector:
+      kubernetes.io/hostname: <node hostname>

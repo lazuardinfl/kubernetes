@@ -137,8 +137,8 @@ spec:
             ssl_certificate_authorities => "${ELASTIC_ES_SSL_CERTIFICATE_AUTHORITY}"
             ilm_enabled => true
             ilm_rollover_alias => "logstash-filebeat"
-            ilm_pattern => "000001"
-            ilm_policy => "7-days@lifecycle"
+            ilm_pattern => "{now/d}-000001"
+            ilm_policy => "${FILEBEAT_ILM_POLICY}"
           }
         } else if [@metadata][beat] == "packetbeat" {
           elasticsearch {
@@ -148,8 +148,8 @@ spec:
             ssl_certificate_authorities => "${ELASTIC_ES_SSL_CERTIFICATE_AUTHORITY}"
             ilm_enabled => true
             ilm_rollover_alias => "logstash-packetbeat"
-            ilm_pattern => "000001"
-            ilm_policy => "7-days@lifecycle"
+            ilm_pattern => "{now/d}-000001"
+            ilm_policy => "${PACKETBEAT_ILM_POLICY}"
           }
         }
       }
@@ -160,6 +160,10 @@ spec:
         env:
         - name: LS_JAVA_OPTS
           value: "-Xms2g -Xmx2g"
+        - name: FILEBEAT_ILM_POLICY
+          value: "7-days@lifecycle"
+        - name: PACKETBEAT_ILM_POLICY
+          value: "7-days@lifecycle"
         resources:
           limits:
             memory: 4Gi

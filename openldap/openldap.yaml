@@ -34,6 +34,9 @@ metadata:
   name: openldap
   labels:
     app.kubernetes.io/name: openldap
+  annotations:
+    haproxy.org/check: "false"
+    haproxy.org/send-proxy-protocol: "proxy-v2"
 spec:
   type: ClusterIP
   selector:
@@ -49,6 +52,14 @@ spec:
       port: 636
       protocol: TCP
       targetPort: ldaps
+    - name: ldap-proxy
+      port: 2389
+      protocol: TCP
+      targetPort: ldap-proxy
+    - name: ldaps-proxy
+      port: 2636
+      protocol: TCP
+      targetPort: ldaps-proxy
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -90,6 +101,12 @@ spec:
               value: "/opt/bitnami/openldap/certs/tls.key"
             - name: LDAP_TLS_CA_FILE
               value: "/opt/bitnami/openldap/certs/ca.crt"
+            - name: LDAP_ENABLE_PROXYPROTO
+              value: "yes"
+            - name: LDAP_PROXYPROTO_PORT_NUMBER
+              value: "2389"
+            - name: LDAP_PROXYPROTO_LDAPS_PORT_NUMBER
+              value: "2636"
           envFrom:
             - secretRef:
                 name: openldap-secret
@@ -98,6 +115,10 @@ spec:
               containerPort: 1389
             - name: ldaps
               containerPort: 1636
+            - name: ldap-proxy
+              containerPort: 2389
+            - name: ldaps-proxy
+              containerPort: 2636
           volumeMounts:
             - name: tls
               mountPath: /opt/bitnami/openldap/certs
@@ -109,10 +130,11 @@ spec:
         - name: tls
           projected:
             sources:
-            - secret:
-                name: openldap-tls
-            - secret:
-                name: private-ca
+              - secret:
+                  name: openldap-tls
+              - secret:
+                  name: private-ca
+                  optional: true
         - name: data
           persistentVolumeClaim:
             claimName: openldap-pvc
@@ -154,4 +176,4 @@ spec:
           port: 636
     service:
       name: openldap
-      port: 636
+      port: 2636

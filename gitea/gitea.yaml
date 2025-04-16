@@ -17,7 +17,7 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  name: gitea-http
+  name: gitea
   labels:
     app: gitea
     app.kubernetes.io/name: gitea
@@ -25,27 +25,12 @@ metadata:
 spec:
   type: ClusterIP
   ports:
-  - name: http
-    port: 3000
-    targetPort: 3000
-  selector:
-    app.kubernetes.io/name: gitea
-    app.kubernetes.io/instance: gitea
----
-apiVersion: v1
-kind: Service
-metadata:
-  name: gitea-ssh
-  labels:
-    app: gitea
-    app.kubernetes.io/name: gitea
-    app.kubernetes.io/instance: gitea
-spec:
-  type: ClusterIP
-  ports:
-  - name: ssh
-    port: 22
-    targetPort: 2222
+    - name: http
+      port: 443
+      targetPort: 3000
+    - name: ssh
+      port: 2222
+      targetPort: 2222
   selector:
     app.kubernetes.io/name: gitea
     app.kubernetes.io/instance: gitea
@@ -82,7 +67,7 @@ spec:
         fsGroup: 1000
       initContainers:
         - name: init-directories
-          image: gitea/gitea:1.23.4-rootless
+          image: docker.gitea.com/gitea:1.23.7-rootless
           command: ["/usr/sbin/init_directory_structure.sh"]
           env:
             - name: GITEA_APP_INI
@@ -105,7 +90,7 @@ spec:
               cpu: 100m
               memory: 128Mi
         - name: init-app-ini
-          image: gitea/gitea:1.23.4-rootless
+          image: docker.gitea.com/gitea:1.23.7-rootless
           command: ["/usr/sbin/config_environment.sh"]
           env:
             - name: GITEA_APP_INI
@@ -116,6 +101,10 @@ spec:
               value: /data
             - name: GITEA_TEMP
               value: /tmp/gitea
+            - name: TMP_EXISTING_ENVS_FILE
+              value: /tmp/existing-envs
+            - name: ENV_TO_INI_MOUNT_POINT
+              value: /env-to-ini-mounts
           envFrom:
             - secretRef:
                 name: gitea-secret
@@ -133,7 +122,7 @@ spec:
               cpu: 100m
               memory: 128Mi
         - name: configure-gitea
-          image: gitea/gitea:1.23.4-rootless
+          image: docker.gitea.com/gitea:1.23.7-rootless
           command: ["/usr/sbin/configure_gitea.sh"]
           securityContext:
             runAsUser: 1000
@@ -174,7 +163,7 @@ spec:
       terminationGracePeriodSeconds: 60
       containers:
         - name: gitea
-          image: gitea/gitea:1.23.4-rootless
+          image: docker.gitea.com/gitea:1.23.7-rootless
           env:
             - name: SSH_LISTEN_PORT
               value: "2222"
@@ -256,7 +245,8 @@ metadata:
     app.kubernetes.io/instance: gitea
   annotations:
     cert-manager.io/cluster-issuer: "issuer"
-    haproxy.org/ssl-passthrough: "true"
+    haproxy.org/server-ssl: "true"
+    haproxy.org/check: "false"
 spec:
   ingressClassName: haproxy
   tls:
@@ -264,21 +254,21 @@ spec:
         - gitea.domain.com
       secretName: gitea-tls
   rules:
-  - host: gitea.domain.com
-    http:
-      paths:
-      - path: /
-        pathType: Prefix
-        backend:
-          service:
-            name: gitea-http
-            port:
-              number: 3000
+    - host: gitea.domain.com
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: gitea
+                port:
+                  name: http
 ---
 apiVersion: ingress.v1.haproxy.org/v1
 kind: TCP
 metadata:
-  name: gitea-ssh-tcp
+  name: gitea-tcp
   labels:
     app: gitea
     app.kubernetes.io/name: gitea
@@ -292,5 +282,5 @@ spec:
         - name: gitea-ssh
           port: 2222
     service:
-      name: gitea-ssh
-      port: 22
+      name: gitea
+      port: 2222

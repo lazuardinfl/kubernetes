@@ -1,10 +1,10 @@
 gitea:
   additionalConfigFromEnvs:
-    - name: GITEA__DATABASE__HOST
+    - name: GITEA__DATABASE__USER
       valueFrom:
         secretKeyRef:
           name: postgres-secret
-          key: host
+          key: user
     - name: GITEA__DATABASE__PASSWD
       valueFrom:
         secretKeyRef:
@@ -12,44 +12,38 @@ gitea:
           key: password
   additionalConfigSources:
     - secret:
-        secretName: gitea-app-ini-oauth
+        secretName: gitea-extra-secret
     - configMap:
-        name: gitea-app-ini-plaintext
+        name: gitea-extra-config
   admin:
     existingSecret: gitea-admin-secret
-    #username: admin_gitea
-    #password: pass
   config:
-    APP_NAME: "Gitea"
+    APP_NAME: "Gitea App"
     cache:
       ADAPTER: redis
       ENABLED: true
       HOST: "redis://:password@redis.domain.com:6379/0?pool_size=100&idle_timeout=180s&"
     database:
       DB_TYPE: postgres
-      #HOST: db.domain.com:5432
+      HOST: db.domain.com:5432
       NAME: db_name
-      USER: db_user
-      #PASSWD: db_pass
     queue:
       TYPE: redis
-      #CONN_STR: "redis://:password@redis.domain.com:6379/0?pool_size=100&idle_timeout=180s&"
+      CONN_STR: "redis://:password@redis.domain.com:6379/0?pool_size=100&idle_timeout=180s&"
     session:
       PROVIDER: redis
       PROVIDER_CONFIG: "redis://:password@redis.domain.com:6379/0?pool_size=100&idle_timeout=180s&"
-  imageRegistry: "registry.domain.com"
 
 ingress:
   enabled: true
   className: nginx
   annotations:
-    cert-manager.io/cluster-issuer: "domain-ca-issuer"
-    cert-manager.io/common-name: "domain Gitea Hub"
+    cert-manager.io/cluster-issuer: ca-issuer
   hosts:
-    - host: hub.domain.com
+    - host: gitea.domain.com
   tls:
     - hosts:
-        - hub.domain.com
+        - gitea.domain.com
       secretName: gitea-tls
 
 nodeSelector:

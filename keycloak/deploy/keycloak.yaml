@@ -26,13 +26,18 @@ spec:
       secret:
         name: private-ca
   # proxy:
-  #   headers: forwarded|xforwarded
+  #   headers: xforwarded
   # features:
   #   enabled:
   #     - admin-fine-grained-authz
   # additionalOptions:
   #   - name: spi-theme-welcome-theme
   #     value: keycloak.v2
+  # unsupported:
+  #   podTemplate:
+  #     spec:
+  #       nodeSelector:
+  #         kubernetes.io/hostname: node-name
 ---
 apiVersion: v1
 kind: Secret
@@ -64,12 +69,13 @@ spec:
         - keycloak.domain.com
       secretName: keycloak-tls
   rules:
-  - host: keycloak.domain.com
-    http:
-      paths:
-      - pathType: ImplementationSpecific
-        backend:
-          service:
-            name: keycloak-service
-            port:
-              name: https
+    - host: keycloak.domain.com
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: keycloak-service
+                port:
+                  name: https

@@ -888,7 +888,7 @@ spec:
                     type: "object"
                   samplerRatio:
                     description: "OpenTelemetry sampler ratio. Probability that a\
-                      \ span will be sampled. Expected double value in interval <0,1)."
+                      \ span will be sampled. Expected double value in interval [0,1]."
                     type: "number"
                   samplerType:
                     description: "OpenTelemetry sampler to use for tracing (default\

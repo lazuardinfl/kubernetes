@@ -2,12 +2,12 @@ apiVersion: v1
 kind: ServiceAccount
 metadata:
   annotations:
-    app.quarkus.io/quarkus-version: 3.15.3
+    app.quarkus.io/quarkus-version: 3.15.4
     app.quarkus.io/vcs-uri: https://github.com/keycloak/keycloak.git
-    app.quarkus.io/build-timestamp: 2025-02-11 - 08:56:47 +0000
+    app.quarkus.io/build-timestamp: 2025-04-11 - 08:03:46 +0000
   labels:
     app.kubernetes.io/name: keycloak-operator
-    app.kubernetes.io/version: 26.1.2
+    app.kubernetes.io/version: 26.1.5
     app.kubernetes.io/managed-by: quarkus
   name: keycloak-operator
 ---
@@ -247,7 +247,7 @@ kind: RoleBinding
 metadata:
   labels:
     app.kubernetes.io/name: keycloak-operator
-    app.kubernetes.io/version: 26.1.2
+    app.kubernetes.io/version: 26.1.5
   name: keycloak-operator-view
 roleRef:
   kind: ClusterRole
@@ -261,12 +261,12 @@ apiVersion: v1
 kind: Service
 metadata:
   annotations:
-    app.quarkus.io/quarkus-version: 3.15.3
+    app.quarkus.io/quarkus-version: 3.15.4
     app.quarkus.io/vcs-uri: https://github.com/keycloak/keycloak.git
-    app.quarkus.io/build-timestamp: 2025-02-11 - 08:56:47 +0000
+    app.quarkus.io/build-timestamp: 2025-04-11 - 08:03:46 +0000
   labels:
     app.kubernetes.io/name: keycloak-operator
-    app.kubernetes.io/version: 26.1.2
+    app.kubernetes.io/version: 26.1.5
     app.kubernetes.io/managed-by: quarkus
   name: keycloak-operator
 spec:
@@ -283,12 +283,12 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   annotations:
-    app.quarkus.io/quarkus-version: 3.15.3
+    app.quarkus.io/quarkus-version: 3.15.4
     app.quarkus.io/vcs-uri: https://github.com/keycloak/keycloak.git
-    app.quarkus.io/build-timestamp: 2025-02-11 - 08:56:47 +0000
+    app.quarkus.io/build-timestamp: 2025-04-11 - 08:03:46 +0000
   labels:
     app.kubernetes.io/name: keycloak-operator
-    app.kubernetes.io/version: 26.1.2
+    app.kubernetes.io/version: 26.1.5
     app.kubernetes.io/managed-by: quarkus
   name: keycloak-operator
 spec:
@@ -299,12 +299,12 @@ spec:
   template:
     metadata:
       annotations:
-        app.quarkus.io/quarkus-version: 3.15.3
+        app.quarkus.io/quarkus-version: 3.15.4
         app.quarkus.io/vcs-uri: https://github.com/keycloak/keycloak.git
-        app.quarkus.io/build-timestamp: 2025-02-11 - 08:56:47 +0000
+        app.quarkus.io/build-timestamp: 2025-04-11 - 08:03:46 +0000
       labels:
         app.kubernetes.io/managed-by: quarkus
-        app.kubernetes.io/version: 26.1.2
+        app.kubernetes.io/version: 26.1.5
         app.kubernetes.io/name: keycloak-operator
     spec:
       containers:
@@ -314,8 +314,8 @@ spec:
                 fieldRef:
                   fieldPath: metadata.namespace
             - name: RELATED_IMAGE_KEYCLOAK
-              value: quay.io/keycloak/keycloak:26.1.2
-          image: quay.io/keycloak/keycloak-operator:26.1.2
+              value: quay.io/keycloak/keycloak:26.1.5
+          image: quay.io/keycloak/keycloak-operator:26.1.5
           livenessProbe:
             failureThreshold: 3
             httpGet:

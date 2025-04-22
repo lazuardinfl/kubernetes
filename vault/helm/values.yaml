@@ -8,9 +8,7 @@ injector:
 server:
   enabled: true
   nodeSelector:
-    kubernetes.io/hostname: worker-node
-  extraEnvironmentVars:
-    VAULT_CACERT: /vault/userconfig/vault-server-tls/ca.crt
+    kubernetes.io/hostname: node-name
   volumes:
     - name: vault-server-tls
       secret:
@@ -23,18 +21,19 @@ server:
   dataStorage:
     enabled: true
     storageClass: openebs-local
-  auditStorage:
-    enabled: true
-    storageClass: openebs-local
   standalone:
     enabled: true
     config: |
       listener "tcp" {
         address = "[::]:8200"
         cluster_address = "[::]:8201"
+        proxy_protocol_behavior = "use_always"
         tls_cert_file = "/vault/userconfig/vault-server-tls/tls.crt"
-        tls_key_file  = "/vault/userconfig/vault-server-tls/tls.key"
-        tls_client_ca_file = "/vault/userconfig/vault-server-tls/ca.crt"
+        tls_key_file = "/vault/userconfig/vault-server-tls/tls.key"
+        tls_disable_client_certs = "true"
+      }
+      storage "file" {
+        path = "/vault/data"
       }
   ingress:
     enabled: true

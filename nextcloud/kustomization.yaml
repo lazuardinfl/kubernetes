@@ -1,4 +1,14 @@
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
+namespace: nextcloud
 resources:
   - nextcloud.yaml
+  - nextcloud-workload.yaml
+patchesStrategicMerge:
+  - patch.yaml
+secretGenerator:
+  - name: nextcloud-secret
+    behavior: merge
+    env: .env
+generatorOptions:
+  disableNameSuffixHash: true

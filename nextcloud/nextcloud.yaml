@@ -1,16 +1,55 @@
 apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: nextcloud-reloader
+  labels:
+    app.kubernetes.io/name: nextcloud
+    app.kubernetes.io/instance: nextcloud
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: nextcloud-reloader
+  labels:
+    app.kubernetes.io/name: nextcloud
+    app.kubernetes.io/instance: nextcloud
+rules:
+  - apiGroups: [""]
+    resources: ["pods", "pods/log"]
+    verbs: ["get", "list"]
+  - apiGroups: [""]
+    resources: ["pods/exec"]
+    verbs: ["create"]
+  - apiGroups: ["apps"]
+    resources: ["deployments"]
+    verbs: ["get", "list"]
+  - apiGroups: ["apps"]
+    resources: ["deployments/exec"]
+    verbs: ["create"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: nextcloud-reloader
+  labels:
+    app.kubernetes.io/name: nextcloud
+    app.kubernetes.io/instance: nextcloud
+roleRef:
+  kind: Role
+  name: nextcloud-reloader
+  apiGroup: rbac.authorization.k8s.io
+subjects:
+  - kind: ServiceAccount
+    name: nextcloud-reloader
+---
+apiVersion: v1
 kind: ConfigMap
 metadata:
   name: nextcloud-config
   labels:
     app.kubernetes.io/name: nextcloud
     app.kubernetes.io/instance: nextcloud
-data:
-  remoteip.conf: |-
-    RemoteIPHeader X-Forwarded-For
-    RemoteIPInternalProxy 10.0.0.0/8
-    RemoteIPInternalProxy 172.16.0.0/12
-    RemoteIPInternalProxy 192.168.0.0/16
+data:  
   other.config.php: |-
     <?php
     $CONFIG = array (
@@ -18,6 +57,10 @@ data:
       'lost_password_link' => 'disabled',
       'has_internet_connection' => false,
       'simpleSignUpLink.shown' => false,
+      'trusted_proxies' => array(
+        0 => '::1',
+        1 => '127.0.0.1',
+      ),
     );
   .htaccess: |-
     # line below if for Apache 2.4
@@ -260,6 +303,48 @@ data:
     $CONFIG = array (
       'upgrade.disable-web' => true,
     );
+  remoteip.conf: |-
+    RemoteIPHeader X-Forwarded-For
+    RemoteIPInternalProxy ::1
+    RemoteIPInternalProxy 127.0.0.1
+  haproxy.cfg: |+
+    global
+        log 127.0.0.1 local2
+        chroot /var/lib/haproxy
+        pidfile /var/run/haproxy.pid
+        user haproxy
+        group haproxy
+        tune.ssl.default-dh-param 2048
+        ssl-default-bind-options prefer-client-ciphers no-sslv3 no-tls-tickets no-tlsv10
+        ssl-default-bind-ciphersuites TLS_AES_128_GCM_SHA256:TLS_AES_256_GCM_SHA384:TLS_CHACHA20_POLY1305_SHA256
+        ssl-default-bind-ciphers ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-GCM-SHA256:ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-GCM-SHA384:ECDHE-ECDSA-CHACHA20-POLY1305:ECDHE-RSA-CHACHA20-POLY1305:DHE-RSA-AES128-GCM-SHA256:DHE-RSA-AES256-GCM-SHA384:DHE-RSA-CHACHA20-POLY1305
+
+    defaults
+        log global
+        option redispatch
+        option dontlognull
+        option http-keep-alive
+        timeout http-request 5000
+        timeout connect 5000
+        timeout client 50000
+        timeout queue 5000
+        timeout server 50000
+        timeout tunnel 3600000
+        timeout http-keep-alive 60000
+
+    frontend https
+        mode http
+        bind 0.0.0.0:"$HAPROXY_HTTPS_PORT" name v4 crt /usr/local/etc/haproxy/certs/tls.crt ssl alpn h2,http/1.1
+        bind 0.0.0.0:"$HAPROXY_HTTPS_PROXY_PROTOCOL_PORT" name v4 crt /usr/local/etc/haproxy/certs/tls.crt ssl alpn h2,http/1.1 accept-proxy
+        http-request set-header X-Forwarded-Proto https
+        http-response set-header Strict-Transport-Security "max-age=15552000; includeSubDomains;"
+        default_backend app
+
+    backend app
+        mode http
+        option forwardfor
+        no option abortonclose
+        server app1 "$HAPROXY_BACKEND"
 ---
 apiVersion: v1
 kind: Secret
@@ -306,10 +391,12 @@ metadata:
 spec:
   type: ClusterIP
   ports:
-    - port: 8080
-      targetPort: 80
-      protocol: TCP
-      name: http
+    - name: https
+      port: 443
+      targetPort: https
+    - name: https-proxy
+      port: 1443
+      targetPort: https-proxy
   selector:
     app.kubernetes.io/name: nextcloud
     app.kubernetes.io/instance: nextcloud
@@ -325,8 +412,9 @@ metadata:
     app.kubernetes.io/component: app
   annotations:
     cert-manager.io/cluster-issuer: "issuer"
-    haproxy.org/response-set-header: |
-      Strict-Transport-Security "max-age=15552000"
+    haproxy.org/check: "false"
+    haproxy.org/ssl-passthrough: "true"
+    haproxy.org/send-proxy-protocol: "proxy-v2"
 spec:
   ingressClassName: haproxy
   tls:
@@ -343,4 +431,4 @@ spec:
               service:
                 name: nextcloud
                 port:
-                  number: 8080
+                  name: https-proxy

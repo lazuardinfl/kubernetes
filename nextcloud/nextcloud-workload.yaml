@@ -49,8 +49,6 @@ spec:
               value: "nextcloud.domain.com"
             - name: NEXTCLOUD_DATA_DIR
               value: "/var/www/html/data"
-            - name: TRUSTED_PROXIES
-              value: "10.0.0.0/8 172.16.0.0/12 192.168.0.0/16"
           envFrom:
             - secretRef:
                 name: nextcloud-secret
@@ -61,7 +59,7 @@ spec:
           livenessProbe:
             httpGet:
               path: /status.php
-              port:  80
+              port: 80
               httpHeaders:
               - name: Host
                 value: localhost
@@ -73,7 +71,7 @@ spec:
           readinessProbe:
             httpGet:
               path: /status.php
-              port:  80
+              port: 80
               httpHeaders:
               - name: Host
                 value: localhost
@@ -158,8 +156,6 @@ spec:
               value: "nextcloud.domain.com"
             - name: NEXTCLOUD_DATA_DIR
               value: "/var/www/html/data"
-            - name: TRUSTED_PROXIES
-              value: "10.0.0.0/8 172.16.0.0/12 192.168.0.0/16"
           envFrom:
             - secretRef:
                 name: nextcloud-secret
@@ -225,6 +221,27 @@ spec:
               mountPath: /etc/ssl/certs/ca-certificates.crt
               subPath: ca-certificates.crt
           resources: {}
+        - name: nextcloud-haproxy
+          image: haproxytech/haproxy-alpine:3.0.9
+          env:
+            - name: HAPROXY_BACKEND
+              value: "localhost:80"
+            - name: HAPROXY_HTTPS_PORT
+              value: "8443"
+            - name: HAPROXY_HTTPS_PROXY_PROTOCOL_PORT
+              value: "9443"
+          ports:
+            - name: https
+              containerPort: 8443
+            - name: https-proxy
+              containerPort: 9443
+          volumeMounts:
+            - name: nextcloud-config
+              mountPath: /usr/local/etc/haproxy/haproxy.cfg
+              subPath: haproxy.cfg
+            - name: tls
+              mountPath: /usr/local/etc/haproxy/certs
+          resources: {}
       volumes:
         - name: nextcloud-main
           persistentVolumeClaim:
@@ -235,8 +252,45 @@ spec:
         - name: private-ca
           secret:
             secretName: private-ca
+            optional: true
+        - name: tls
+          projected:
+            sources:
+            - secret:
+                name: nextcloud-tls
+                items:
+                  - key: tls.crt
+                    path: tls.crt
+                  - key: tls.key
+                    path: tls.crt.key
         - name: ca
           emptyDir: {}
       securityContext:
         # Will mount configuration files as www-data (id: 33) for nextcloud
         fsGroup: 33
+---
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: nextcloud-reloader
+  labels:
+    app.kubernetes.io/name: nextcloud
+    app.kubernetes.io/instance: nextcloud-reloader
+  annotations:
+    secret.reloader.stakater.com/reload: "nextcloud-tls"
+spec:
+  schedule: "0 1 1 1 *"
+  jobTemplate:
+    spec:
+      ttlSecondsAfterFinished: 1
+      template:
+        spec:
+          serviceAccountName: nextcloud-reloader
+          containers:
+            - name: reloader
+              image: alpine/k8s:latest
+              command: ["/bin/bash", "-c", "--"]
+              args:
+                - sleep 120;
+                  kubectl exec -it deploy/nextcloud -c nextcloud-haproxy -- pkill -SIGHUP haproxy;
+          restartPolicy: OnFailure

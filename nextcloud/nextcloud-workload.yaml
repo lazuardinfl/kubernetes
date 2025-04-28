@@ -33,7 +33,7 @@ spec:
           securityContext:
             runAsUser: 0
           volumeMounts:
-            - name: private-ca
+            - name: certs
               mountPath: /usr/local/share/ca-certificates/ca.crt
               subPath: ca.crt
               readOnly: true
@@ -239,7 +239,7 @@ spec:
             - name: nextcloud-config
               mountPath: /usr/local/etc/haproxy/haproxy.cfg
               subPath: haproxy.cfg
-            - name: tls
+            - name: certs
               mountPath: /usr/local/etc/haproxy/certs
           resources: {}
       volumes:
@@ -249,20 +249,19 @@ spec:
         - name: nextcloud-config
           configMap:
             name: nextcloud-config
-        - name: private-ca
-          secret:
-            secretName: private-ca
-            optional: true
-        - name: tls
+        - name: certs
           projected:
             sources:
-            - secret:
-                name: nextcloud-tls
-                items:
-                  - key: tls.crt
-                    path: tls.crt
-                  - key: tls.key
-                    path: tls.crt.key
+              - secret:
+                  name: nextcloud-tls
+                  items:
+                    - key: tls.crt
+                      path: tls.crt
+                    - key: tls.key
+                      path: tls.crt.key
+              - secret:
+                  name: private-ca
+                  optional: true
         - name: ca
           emptyDir: {}
       securityContext:

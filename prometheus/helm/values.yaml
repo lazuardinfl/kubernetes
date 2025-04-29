@@ -14,16 +14,51 @@ grafana:
   adminUser: <user>
   adminPassword: <password>
   ingress:
-    enabled: true
-    ingressClassName: <ingress class>
-    annotations:
-      cert-manager.io/cluster-issuer: <issuer>
-    hosts:
-      - <grafana.domain.com>
-    tls:
-    - secretName: prometheus-grafana-tls
-      hosts:
-        - <grafana.domain.com>
+    enabled: false
+  extraExposePorts:
+    - name: https
+      port: 443
+      targetPort: https
+    - name: https-proxy
+      port: 1443
+      targetPort: https-proxy
+  extraContainers: |
+    - name: grafana-haproxy
+      image: {{ .Values.global.imageRegistry }}/haproxytech/haproxy-alpine:3.0.9
+      securityContext:
+        runAsNonRoot: false
+        runAsUser: 0
+        runAsGroup: 0
+      env:
+        - name: HAPROXY_BACKEND
+          value: "localhost:3000"
+        - name: HAPROXY_HTTPS_PORT
+          value: "8443"
+        - name: HAPROXY_HTTPS_PROXY_PROTOCOL_PORT
+          value: "9443"
+      ports:
+        - name: https
+          containerPort: 8443
+        - name: https-proxy
+          containerPort: 9443
+      volumeMounts:
+        - name: haproxy
+          mountPath: /usr/local/etc/haproxy/haproxy.cfg
+          subPath: haproxy.cfg
+        - name: tls
+          mountPath: /usr/local/etc/haproxy/certs
+  extraContainerVolumes:
+    - name: haproxy
+      configMap:
+        name: prometheus-grafana-haproxy
+    - name: tls
+      secret:
+        secretName: prometheus-grafana-tls
+        items:
+          - key: tls.crt
+            path: tls.crt
+          - key: tls.key
+            path: tls.crt.key
   persistence:
     enabled: true
     storageClassName: openebs-local
@@ -75,7 +110,8 @@ prometheus:
           name: prometheus
         spec:
           storageClassName: openebs-local
-          accessModes: ["ReadWriteOnce"]
+          accessModes:
+            - ReadWriteOnce
           resources:
             requests:
               storage: 1G
@@ -84,3 +120,137 @@ thanos:
   thanosRulerSpec:
     nodeSelector:
       kubernetes.io/hostname: <node hostname>
+
+extraManifests:
+  - apiVersion: v1
+    kind: ServiceAccount
+    metadata:
+      name: prometheus-grafana-reloader
+      namespace: "{{ .Values.grafana.namespaceOverride }}"
+  - apiVersion: rbac.authorization.k8s.io/v1
+    kind: Role
+    metadata:
+      name: prometheus-grafana-reloader
+      namespace: "{{ .Values.grafana.namespaceOverride }}"
+    rules:
+      - apiGroups: [""]
+        resources: ["pods", "pods/log"]
+        verbs: ["get", "list"]
+      - apiGroups: [""]
+        resources: ["pods/exec"]
+        verbs: ["create"]
+      - apiGroups: ["apps"]
+        resources: ["deployments"]
+        verbs: ["get", "list"]
+      - apiGroups: ["apps"]
+        resources: ["deployments/exec"]
+        verbs: ["create"]
+  - apiVersion: rbac.authorization.k8s.io/v1
+    kind: RoleBinding
+    metadata:
+      name: prometheus-grafana-reloader
+      namespace: "{{ .Values.grafana.namespaceOverride }}"
+    roleRef:
+      apiGroup: rbac.authorization.k8s.io
+      kind: Role
+      name: prometheus-grafana-reloader
+    subjects:
+      - kind: ServiceAccount
+        name: prometheus-grafana-reloader
+        namespace: "{{ .Values.grafana.namespaceOverride }}"
+  - apiVersion: v1
+    kind: ConfigMap
+    metadata:
+      name: prometheus-grafana-haproxy
+      namespace: "{{ .Values.grafana.namespaceOverride }}"
+    data:  
+      haproxy.cfg: |+
+        global
+            log 127.0.0.1 local2
+            chroot /var/lib/haproxy
+            pidfile /var/run/haproxy.pid
+            user haproxy
+            group haproxy
+            tune.ssl.default-dh-param 2048
+            ssl-default-bind-options prefer-client-ciphers no-sslv3 no-tls-tickets no-tlsv10
+            ssl-default-bind-ciphersuites TLS_AES_128_GCM_SHA256:TLS_AES_256_GCM_SHA384:TLS_CHACHA20_POLY1305_SHA256
+            ssl-default-bind-ciphers ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-GCM-SHA256:ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-GCM-SHA384:ECDHE-ECDSA-CHACHA20-POLY1305:ECDHE-RSA-CHACHA20-POLY1305:DHE-RSA-AES128-GCM-SHA256:DHE-RSA-AES256-GCM-SHA384:DHE-RSA-CHACHA20-POLY1305
+
+        defaults
+            log global
+            option redispatch
+            option dontlognull
+            option http-keep-alive
+            timeout http-request 5000
+            timeout connect 5000
+            timeout client 50000
+            timeout queue 5000
+            timeout server 50000
+            timeout tunnel 3600000
+            timeout http-keep-alive 60000
+
+        frontend https
+            mode http
+            bind 0.0.0.0:"$HAPROXY_HTTPS_PORT" name v4 crt /usr/local/etc/haproxy/certs/tls.crt ssl alpn h2,http/1.1
+            bind 0.0.0.0:"$HAPROXY_HTTPS_PROXY_PROTOCOL_PORT" name v4 crt /usr/local/etc/haproxy/certs/tls.crt ssl alpn h2,http/1.1 accept-proxy
+            http-request set-header X-Forwarded-Proto https
+            http-response set-header Strict-Transport-Security "max-age=15552000; includeSubDomains;"
+            default_backend app
+
+        backend app
+            mode http
+            option forwardfor
+            no option abortonclose
+            server app1 "$HAPROXY_BACKEND"
+  - apiVersion: batch/v1
+    kind: CronJob
+    metadata:
+      name: prometheus-grafana-reloader
+      namespace: "{{ .Values.grafana.namespaceOverride }}"
+      annotations:
+        secret.reloader.stakater.com/reload: prometheus-grafana-tls
+    spec:
+      schedule: "0 1 1 1 *"
+      jobTemplate:
+        spec:
+          ttlSecondsAfterFinished: 1
+          template:
+            spec:
+              serviceAccountName: prometheus-grafana-reloader
+              containers:
+                - name: reloader
+                  image: "{{ .Values.global.imageRegistry }}/alpine/k8s:latest"
+                  command: ["/bin/bash", "-c", "--"]
+                  args:
+                    - sleep 120;
+                      kubectl exec -it deploy/prometheus-grafana -c grafana-haproxy -- pkill -SIGHUP haproxy;
+              restartPolicy: OnFailure
+              nodeSelector:
+                kubernetes.io/hostname: <node hostname>
+  - apiVersion: networking.k8s.io/v1
+    kind: Ingress
+    metadata:
+      name: grafana-ingress
+      namespace: "{{ .Values.grafana.namespaceOverride }}"
+      annotations:
+        cert-manager.io/cluster-issuer: <issuer>
+        haproxy.org/check: "false"
+        haproxy.org/ssl-passthrough: "true"
+        haproxy.org/send-proxy-protocol: "proxy-v2"
+    spec:
+      ingressClassName: haproxy
+      tls:
+        - hosts:
+          - <grafana.domain.com>
+          secretName: prometheus-grafana-tls
+      rules:
+        - host: <grafana.domain.com>
+          http:
+            paths:
+              - path: /
+                pathType: Prefix
+                backend:
+                  service:
+                    name: prometheus-grafana
+                    port:
+                      name: https-proxy

@@ -1,16 +1,55 @@
 apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: nextcloud-reloader
+  labels:
+    app.kubernetes.io/name: nextcloud
+    app.kubernetes.io/instance: nextcloud
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: nextcloud-reloader
+  labels:
+    app.kubernetes.io/name: nextcloud
+    app.kubernetes.io/instance: nextcloud
+rules:
+  - apiGroups: [""]
+    resources: ["pods", "pods/log"]
+    verbs: ["get", "list"]
+  - apiGroups: [""]
+    resources: ["pods/exec"]
+    verbs: ["create"]
+  - apiGroups: ["apps"]
+    resources: ["deployments"]
+    verbs: ["get", "list"]
+  - apiGroups: ["apps"]
+    resources: ["deployments/exec"]
+    verbs: ["create"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: nextcloud-reloader
+  labels:
+    app.kubernetes.io/name: nextcloud
+    app.kubernetes.io/instance: nextcloud
+roleRef:
+  kind: Role
+  name: nextcloud-reloader
+  apiGroup: rbac.authorization.k8s.io
+subjects:
+  - kind: ServiceAccount
+    name: nextcloud-reloader
+---
+apiVersion: v1
 kind: ConfigMap
 metadata:
   name: nextcloud-config
   labels:
     app.kubernetes.io/name: nextcloud
     app.kubernetes.io/instance: nextcloud
-data:
-  remoteip.conf: |-
-    RemoteIPHeader X-Forwarded-For
-    RemoteIPInternalProxy 10.0.0.0/8
-    RemoteIPInternalProxy 172.16.0.0/12
-    RemoteIPInternalProxy 192.168.0.0/16
+data:  
   other.config.php: |-
     <?php
     $CONFIG = array (
@@ -18,6 +57,10 @@ data:
       'lost_password_link' => 'disabled',
       'has_internet_connection' => false,
       'simpleSignUpLink.shown' => false,
+      'trusted_proxies' => array(
+        0 => '::1',
+        1 => '127.0.0.1',
+      ),
     );
   .htaccess: |-
     # line below if for Apache 2.4
@@ -260,6 +303,48 @@ data:
     $CONFIG = array (
       'upgrade.disable-web' => true,
     );
+  remoteip.conf: |-
+    RemoteIPHeader X-Forwarded-For
+    RemoteIPInternalProxy ::1
+    RemoteIPInternalProxy 127.0.0.1
+  haproxy.cfg: |+
+    global
+        log 127.0.0.1 local2
+        chroot /var/lib/haproxy
+        pidfile /var/run/haproxy.pid
+        user haproxy
+        group haproxy
+        tune.ssl.default-dh-param 2048
+        ssl-default-bind-options prefer-client-ciphers no-sslv3 no-tls-tickets no-tlsv10
+        ssl-default-bind-ciphersuites TLS_AES_128_GCM_SHA256:TLS_AES_256_GCM_SHA384:TLS_CHACHA20_POLY1305_SHA256
+        ssl-default-bind-ciphers ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-GCM-SHA256:ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-GCM-SHA384:ECDHE-ECDSA-CHACHA20-POLY1305:ECDHE-RSA-CHACHA20-POLY1305:DHE-RSA-AES128-GCM-SHA256:DHE-RSA-AES256-GCM-SHA384:DHE-RSA-CHACHA20-POLY1305
+
+    defaults
+        log global
+        option redispatch
+        option dontlognull
+        option http-keep-alive
+        timeout http-request 5000
+        timeout connect 5000
+        timeout client 50000
+        timeout queue 5000
+        timeout server 50000
+        timeout tunnel 3600000
+        timeout http-keep-alive 60000
+
+    frontend https
+        mode http
+        bind 0.0.0.0:"$HAPROXY_HTTPS_PORT" name v4 crt /usr/local/etc/haproxy/certs/tls.crt ssl alpn h2,http/1.1
+        bind 0.0.0.0:"$HAPROXY_HTTPS_PROXY_PROTOCOL_PORT" name v4 crt /usr/local/etc/haproxy/certs/tls.crt ssl alpn h2,http/1.1 accept-proxy
+        http-request set-header X-Forwarded-Proto https
+        http-response set-header Strict-Transport-Security "max-age=15552000; includeSubDomains;"
+        default_backend app
+
+    backend app
+        mode http
+        option forwardfor
+        no option abortonclose
+        server app1 "$HAPROXY_BACKEND"
 ---
 apiVersion: v1
 kind: Secret
@@ -268,18 +353,16 @@ metadata:
   labels:
     app.kubernetes.io/name: nextcloud
     app.kubernetes.io/instance: nextcloud
-  annotations:
-    avp.kubernetes.io/path: "secret/data/system/nextcloud"
 type: Opaque
 data:
-  POSTGRES_HOST: <postgres_host | base64encode>
-  POSTGRES_DB: <postgres_db | base64encode>
-  POSTGRES_USER: <postgres_user | base64encode>
-  POSTGRES_PASSWORD: <postgres_password | base64encode>
-  REDIS_HOST: <redis_host | base64encode>
-  REDIS_HOST_PASSWORD: <redis_host_password | base64encode>
-  NEXTCLOUD_ADMIN_USER: <admin_user | base64encode>
-  NEXTCLOUD_ADMIN_PASSWORD: <admin_password | base64encode>
+  POSTGRES_HOST: postgres.domain.com:5432
+  POSTGRES_DB: db_name
+  POSTGRES_USER: user
+  POSTGRES_PASSWORD: password
+  REDIS_HOST: redis.domain.com
+  REDIS_HOST_PASSWORD: password
+  NEXTCLOUD_ADMIN_USER: nextcloud_admin
+  NEXTCLOUD_ADMIN_PASSWORD: password
 ---
 apiVersion: v1
 kind: PersistentVolumeClaim
@@ -289,8 +372,6 @@ metadata:
     app.kubernetes.io/name: nextcloud
     app.kubernetes.io/instance: nextcloud
     app.kubernetes.io/component: app
-  annotations:
-    argocd.argoproj.io/sync-options: Delete=false
 spec:
   storageClassName: openebs-local
   accessModes:
@@ -310,260 +391,16 @@ metadata:
 spec:
   type: ClusterIP
   ports:
-    - port: 8080
-      targetPort: 80
-      protocol: TCP
-      name: http
+    - name: https
+      port: 443
+      targetPort: https
+    - name: https-proxy
+      port: 1443
+      targetPort: https-proxy
   selector:
     app.kubernetes.io/name: nextcloud
     app.kubernetes.io/instance: nextcloud
     app.kubernetes.io/component: app
----
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: nextcloud
-  labels:
-    app.kubernetes.io/name: nextcloud
-    app.kubernetes.io/instance: nextcloud
-    app.kubernetes.io/component: app
-  annotations:
-    configmap.reloader.stakater.com/reload: nextcloud-config
-    secret.reloader.stakater.com/reload: nextcloud-secret
-spec:
-  replicas: 1
-  strategy:
-    type: Recreate
-  selector:
-    matchLabels:
-      app.kubernetes.io/name: nextcloud
-      app.kubernetes.io/instance: nextcloud
-      app.kubernetes.io/component: app
-  template:
-    metadata:
-      labels:
-        app.kubernetes.io/name: nextcloud
-        app.kubernetes.io/instance: nextcloud
-        app.kubernetes.io/component: app
-    spec:
-      initContainers:
-        - name: init
-          image: nextcloud:30.0.6-apache
-          command: ["bash", "-c"]
-          args:
-          - update-ca-certificates;
-            cp /etc/ssl/certs/ca-certificates.crt /custom-ca/;
-            chmod 644 /custom-ca/ca-certificates.crt;
-          securityContext:
-            runAsUser: 0
-          volumeMounts:
-            - name: private-ca
-              mountPath: /usr/local/share/ca-certificates/ca.crt
-              subPath: ca.crt
-              readOnly: true
-            - name: ca
-              mountPath: /custom-ca
-      containers:
-        - name: nextcloud
-          image: nextcloud:30.0.6-apache
-          env:
-            - name: OVERWRITEPROTOCOL
-              value: "https"
-            - name: NEXTCLOUD_TRUSTED_DOMAINS
-              value: "nextcloud.domain.com"
-            - name: NEXTCLOUD_DATA_DIR
-              value: "/var/www/html/data"
-            - name: TRUSTED_PROXIES
-              value: "10.0.0.0/8 172.16.0.0/12 192.168.0.0/16"
-          envFrom:
-            - secretRef:
-                name: nextcloud-secret
-          ports:
-            - name: http
-              containerPort: 80
-              protocol: TCP
-          livenessProbe:
-            httpGet:
-              path: /status.php
-              port:  80
-              httpHeaders:
-              - name: Host
-                value: "localhost"
-            initialDelaySeconds: 10
-            periodSeconds: 10
-            timeoutSeconds: 5
-            successThreshold: 1
-            failureThreshold: 3
-          readinessProbe:
-            httpGet:
-              path: /status.php
-              port:  80
-              httpHeaders:
-              - name: Host
-                value: "localhost"
-            initialDelaySeconds: 10
-            periodSeconds: 10
-            timeoutSeconds: 5
-            successThreshold: 1
-            failureThreshold: 3
-          volumeMounts:
-            - name: nextcloud-main
-              mountPath: /var/www/
-              subPath: root
-            - name: nextcloud-main
-              mountPath: /var/www/html
-              subPath: html
-            - name: nextcloud-main
-              mountPath: /var/www/html/data
-              subPath: data
-            - name: nextcloud-main
-              mountPath: /var/www/html/config
-              subPath: config
-            - name: nextcloud-main
-              mountPath: /var/www/html/custom_apps
-              subPath: custom_apps
-            - name: nextcloud-main
-              mountPath: /var/www/tmp
-              subPath: tmp
-            - name: nextcloud-main
-              mountPath: /var/www/html/themes
-              subPath: themes
-            - name: nextcloud-config
-              mountPath: /var/www/html/config/other.config.php
-              subPath: other.config.php
-            - name: nextcloud-config
-              mountPath: /var/www/html/config/.htaccess
-              subPath: .htaccess
-            - name: nextcloud-config
-              mountPath: /var/www/html/config/apache-pretty-urls.config.php
-              subPath: apache-pretty-urls.config.php
-            - name: nextcloud-config
-              mountPath: /var/www/html/config/apcu.config.php
-              subPath: apcu.config.php
-            - name: nextcloud-config
-              mountPath: /var/www/html/config/apps.config.php
-              subPath: apps.config.php
-            - name: nextcloud-config
-              mountPath: /var/www/html/config/autoconfig.php
-              subPath: autoconfig.php
-            - name: nextcloud-config
-              mountPath: /var/www/html/config/redis.config.php
-              subPath: redis.config.php
-            - name: nextcloud-config
-              mountPath: /var/www/html/config/reverse-proxy.config.php
-              subPath: reverse-proxy.config.php
-            - name: nextcloud-config
-              mountPath: /var/www/html/config/s3.config.php
-              subPath: s3.config.php
-            - name: nextcloud-config
-              mountPath: /var/www/html/config/smtp.config.php
-              subPath: smtp.config.php
-            - name: nextcloud-config
-              mountPath: /var/www/html/config/swift.config.php
-              subPath: swift.config.php
-            - name: nextcloud-config
-              mountPath: /var/www/html/config/upgrade-disable-web.config.php
-              subPath: upgrade-disable-web.config.php
-            - name: nextcloud-config
-              mountPath: /etc/apache2/conf-available/remoteip.conf
-              subPath: remoteip.conf
-            - name: ca
-              mountPath: /etc/ssl/certs/ca-certificates.crt
-              subPath: ca-certificates.crt
-          resources: {}
-        - name: nextcloud-cron
-          image: nextcloud:30.0.6-apache
-          command:
-            - /cron.sh
-          env:
-            - name: OVERWRITEPROTOCOL
-              value: "https"
-            - name: NEXTCLOUD_TRUSTED_DOMAINS
-              value: "nextcloud.domain.com"
-            - name: NEXTCLOUD_DATA_DIR
-              value: "/var/www/html/data"
-            - name: TRUSTED_PROXIES
-              value: "10.0.0.0/8 172.16.0.0/12 192.168.0.0/16"
-          envFrom:
-            - secretRef:
-                name: nextcloud-secret
-          volumeMounts:
-            - name: nextcloud-main
-              mountPath: /var/www/
-              subPath: root
-            - name: nextcloud-main
-              mountPath: /var/www/html
-              subPath: html
-            - name: nextcloud-main
-              mountPath: /var/www/html/data
-              subPath: data
-            - name: nextcloud-main
-              mountPath: /var/www/html/config
-              subPath: config
-            - name: nextcloud-main
-              mountPath: /var/www/html/custom_apps
-              subPath: custom_apps
-            - name: nextcloud-main
-              mountPath: /var/www/tmp
-              subPath: tmp
-            - name: nextcloud-main
-              mountPath: /var/www/html/themes
-              subPath: themes
-            - name: nextcloud-config
-              mountPath: /var/www/html/config/other.config.php
-              subPath: other.config.php
-            - name: nextcloud-config
-              mountPath: /var/www/html/config/.htaccess
-              subPath: .htaccess
-            - name: nextcloud-config
-              mountPath: /var/www/html/config/apache-pretty-urls.config.php
-              subPath: apache-pretty-urls.config.php
-            - name: nextcloud-config
-              mountPath: /var/www/html/config/apcu.config.php
-              subPath: apcu.config.php
-            - name: nextcloud-config
-              mountPath: /var/www/html/config/apps.config.php
-              subPath: apps.config.php
-            - name: nextcloud-config
-              mountPath: /var/www/html/config/autoconfig.php
-              subPath: autoconfig.php
-            - name: nextcloud-config
-              mountPath: /var/www/html/config/redis.config.php
-              subPath: redis.config.php
-            - name: nextcloud-config
-              mountPath: /var/www/html/config/reverse-proxy.config.php
-              subPath: reverse-proxy.config.php
-            - name: nextcloud-config
-              mountPath: /var/www/html/config/s3.config.php
-              subPath: s3.config.php
-            - name: nextcloud-config
-              mountPath: /var/www/html/config/smtp.config.php
-              subPath: smtp.config.php
-            - name: nextcloud-config
-              mountPath: /var/www/html/config/swift.config.php
-              subPath: swift.config.php
-            - name: nextcloud-config
-              mountPath: /var/www/html/config/upgrade-disable-web.config.php
-              subPath: upgrade-disable-web.config.php
-            - name: ca
-              mountPath: /etc/ssl/certs/ca-certificates.crt
-              subPath: ca-certificates.crt
-          resources: {}
-      volumes:
-        - name: nextcloud-main
-          persistentVolumeClaim:
-            claimName: nextcloud-pvc
-        - name: nextcloud-config
-          configMap:
-            name: nextcloud-config
-        - name: private-ca
-          secret:
-            secretName: private-ca
-        - name: ca
-          emptyDir: {}
-      securityContext:
-        # Will mount configuration files as www-data (id: 33) for nextcloud
-        fsGroup: 33
 ---
 apiVersion: networking.k8s.io/v1
 kind: Ingress
@@ -575,8 +412,9 @@ metadata:
     app.kubernetes.io/component: app
   annotations:
     cert-manager.io/cluster-issuer: "issuer"
-    haproxy.org/response-set-header: |
-      Strict-Transport-Security "max-age=15552000"
+    haproxy.org/check: "false"
+    haproxy.org/ssl-passthrough: "true"
+    haproxy.org/send-proxy-protocol: "proxy-v2"
 spec:
   ingressClassName: haproxy
   tls:
@@ -584,13 +422,13 @@ spec:
         - nextcloud.domain.com
       secretName: nextcloud-tls
   rules:
-  - host: nextcloud.domain.com
-    http:
-      paths:
-        - path: /
-          pathType: Prefix
-          backend:
-            service:
-              name: nextcloud
-              port:
-                number: 8080
+    - host: nextcloud.domain.com
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: nextcloud
+                port:
+                  name: https-proxy

@@ -14,12 +14,12 @@ metadata:
     app.kubernetes.io/name: vault
     app.kubernetes.io/instance: vault
 rules:
-- apiGroups: [""]
-  resources: ["pods", "pods/log"]
-  verbs: ["get", "list"]
-- apiGroups: [""]
-  resources: ["pods/exec"]
-  verbs: ["create"]
+  - apiGroups: [""]
+    resources: ["pods", "pods/log"]
+    verbs: ["get", "list"]
+  - apiGroups: [""]
+    resources: ["pods/exec"]
+    verbs: ["create"]
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
@@ -33,8 +33,8 @@ roleRef:
   name: vault-reloader
   apiGroup: rbac.authorization.k8s.io
 subjects:
-- kind: ServiceAccount
-  name: vault
+  - kind: ServiceAccount
+    name: vault
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
@@ -48,8 +48,8 @@ roleRef:
   kind: ClusterRole
   name: system:auth-delegator
 subjects:
-- kind: ServiceAccount
-  name: vault
+  - kind: ServiceAccount
+    name: vault
 ---
 apiVersion: v1
 kind: ConfigMap
@@ -65,9 +65,9 @@ data:
     listener "tcp" {
       address = "[::]:8200"
       cluster_address = "[::]:8201"
+      proxy_protocol_behavior = "use_always"
       tls_cert_file = "/vault/userconfig/vault-server-tls/tls.crt"
       tls_key_file = "/vault/userconfig/vault-server-tls/tls.key"
-      tls_client_ca_file = "/vault/userconfig/vault-server-tls/ca.crt"
       tls_disable_client_certs = "true"
     }
     storage "file" {
@@ -80,6 +80,7 @@ metadata:
   name: vault-pvc
   labels:
     app.kubernetes.io/name: vault
+    app.kubernetes.io/instance: vault
 spec:
   storageClassName: openebs-local
   accessModes:
@@ -124,7 +125,7 @@ spec:
   publishNotReadyAddresses: true
   ports:
     - name: https
-      port: 8200
+      port: 443
       targetPort: 8200
     - name: https-internal
       port: 8201
@@ -133,41 +134,6 @@ spec:
     app.kubernetes.io/name: vault
     app.kubernetes.io/instance: vault
     component: server
----
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: vault-reloader
-  labels:
-    app.kubernetes.io/name: vault-reloader
-    app.kubernetes.io/instance: vault
-  annotations:
-    secret.reloader.stakater.com/reload: "vault-tls"
-spec:
-  replicas: 1
-  selector:
-    matchLabels:
-      app.kubernetes.io/name: vault-reloader
-      app.kubernetes.io/instance: vault
-  template:
-    metadata:
-      labels:
-        app.kubernetes.io/name: vault-reloader
-        app.kubernetes.io/instance: vault
-    spec:
-      serviceAccountName: vault
-      initContainers:
-        - name: reloader
-          image: alpine/k8s:latest
-          command: ["/bin/bash", "-c", "--"]
-          args:
-          - sleep 120;
-            kubectl exec -it vault-0 -- pkill -SIGHUP vault;
-      containers:
-        - name: loop
-          image: alpine:latest
-          command: ["tail", "-f", "/dev/null"]
-          resources: {}
 ---
 apiVersion: apps/v1
 kind: StatefulSet
@@ -200,7 +166,7 @@ spec:
             - labelSelector:
                 matchLabels:
                   app.kubernetes.io/name: vault
-                  app.kubernetes.io/instance: "vault"
+                  app.kubernetes.io/instance: vault
                   component: server
               topologyKey: kubernetes.io/hostname
       terminationGracePeriodSeconds: 10
@@ -216,10 +182,11 @@ spec:
           projected:
             defaultMode: 420
             sources:
-            - secret:
-                name: vault-tls
-            - secret:
-                name: private-ca
+              - secret:
+                  name: vault-tls
+              - secret:
+                  name: private-ca
+                  optional: true
         - name: config
           configMap:
             name: vault-config
@@ -230,20 +197,20 @@ spec:
           emptyDir: {}
       containers:
         - name: vault
-          image: hashicorp/vault:1.18.4
+          image: hashicorp/vault:1.19.2
           command:
-          - "/bin/sh"
-          - "-ec"
+            - "/bin/sh"
+            - "-ec"
           args: 
-          - |
-            cp /vault/config/extraconfig-from-values.hcl /tmp/storageconfig.hcl;
-            [ -n "${HOST_IP}" ] && sed -Ei "s|HOST_IP|${HOST_IP?}|g" /tmp/storageconfig.hcl;
-            [ -n "${POD_IP}" ] && sed -Ei "s|POD_IP|${POD_IP?}|g" /tmp/storageconfig.hcl;
-            [ -n "${HOSTNAME}" ] && sed -Ei "s|HOSTNAME|${HOSTNAME?}|g" /tmp/storageconfig.hcl;
-            [ -n "${API_ADDR}" ] && sed -Ei "s|API_ADDR|${API_ADDR?}|g" /tmp/storageconfig.hcl;
-            [ -n "${TRANSIT_ADDR}" ] && sed -Ei "s|TRANSIT_ADDR|${TRANSIT_ADDR?}|g" /tmp/storageconfig.hcl;
-            [ -n "${RAFT_ADDR}" ] && sed -Ei "s|RAFT_ADDR|${RAFT_ADDR?}|g" /tmp/storageconfig.hcl;
-            /usr/local/bin/docker-entrypoint.sh vault server -config=/tmp/storageconfig.hcl 
+            - |
+              cp /vault/config/extraconfig-from-values.hcl /tmp/storageconfig.hcl;
+              [ -n "${HOST_IP}" ] && sed -Ei "s|HOST_IP|${HOST_IP?}|g" /tmp/storageconfig.hcl;
+              [ -n "${POD_IP}" ] && sed -Ei "s|POD_IP|${POD_IP?}|g" /tmp/storageconfig.hcl;
+              [ -n "${HOSTNAME}" ] && sed -Ei "s|HOSTNAME|${HOSTNAME?}|g" /tmp/storageconfig.hcl;
+              [ -n "${API_ADDR}" ] && sed -Ei "s|API_ADDR|${API_ADDR?}|g" /tmp/storageconfig.hcl;
+              [ -n "${TRANSIT_ADDR}" ] && sed -Ei "s|TRANSIT_ADDR|${TRANSIT_ADDR?}|g" /tmp/storageconfig.hcl;
+              [ -n "${RAFT_ADDR}" ] && sed -Ei "s|RAFT_ADDR|${RAFT_ADDR?}|g" /tmp/storageconfig.hcl;
+              /usr/local/bin/docker-entrypoint.sh vault server -config=/tmp/storageconfig.hcl
           securityContext:
             allowPrivilegeEscalation: false
           env:
@@ -279,8 +246,6 @@ spec:
               value: "https://$(HOSTNAME).vault-internal:8201"
             - name: HOME
               value: "/home/vault"
-            - name: VAULT_CACERT
-              value: "/vault/userconfig/vault-server-tls/ca.crt"
           volumeMounts:
             - name: data
               mountPath: /vault/data
@@ -313,19 +278,44 @@ spec:
             timeoutSeconds: 3
           lifecycle:
             # Vault container doesn't receive SIGTERM from Kubernetes
-            # and after the grace period ends, Kube sends SIGKILL.  This
+            # and after the grace period ends, Kube sends SIGKILL. This
             # causes issues with graceful shutdowns such as deregistering itself
             # from Consul (zombie services).
             preStop:
               exec:
-                command: [
-                  "/bin/sh", "-c",
+                command:
+                  - "/bin/sh"
+                  - "-c"
                   # Adding a sleep here to give the pod eviction a
                   # chance to propagate, so requests will not be made
                   # to this pod while it's terminating
-                  "sleep 5 && kill -SIGTERM $(pidof vault)",
-                ]
-          resources: {}
+                  - "sleep 5 && kill -SIGTERM $(pidof vault)"
+---
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: vault-reloader
+  labels:
+    app.kubernetes.io/name: vault
+    app.kubernetes.io/instance: vault-reloader
+  annotations:
+    secret.reloader.stakater.com/reload: "vault-tls"
+spec:
+  schedule: "0 1 1 1 *"
+  jobTemplate:
+    spec:
+      ttlSecondsAfterFinished: 1
+      template:
+        spec:
+          serviceAccountName: vault
+          containers:
+            - name: reloader
+              image: alpine/k8s:latest
+              command: ["/bin/bash", "-c", "--"]
+              args:
+                - sleep 120;
+                  kubectl exec -it vault-0 -- pkill -SIGHUP vault;
+          restartPolicy: OnFailure
 ---
 apiVersion: networking.k8s.io/v1
 kind: Ingress
@@ -336,7 +326,9 @@ metadata:
     app.kubernetes.io/instance: vault
   annotations:
     cert-manager.io/cluster-issuer: "issuer"
+    haproxy.org/check: "false"
     haproxy.org/ssl-passthrough: "true"
+    haproxy.org/send-proxy-protocol: "proxy-v2"
 spec:
   ingressClassName: haproxy
   tls:
@@ -344,13 +336,13 @@ spec:
         - vault.domain.com
       secretName: vault-tls
   rules:
-  - host: vault.domain.com
-    http:
-      paths:
-      - path: /
-        pathType: Prefix
-        backend:
-          service:
-            name: vault
-            port:
-              number: 8200
+    - host: vault.domain.com
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: vault
+                port:
+                  name: https

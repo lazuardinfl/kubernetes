@@ -27,17 +27,25 @@ Rules:
 - user must have manager
 - group must have owner, manager, or secretary
 
-## kubernetes
+## in-cluster traffic
 
-To connect openldap pod from another pod inside kubernetes cluster, you can use `openldap.openldap` as hostname.
-If you have another namespace, you can connect using `openldap.<target-namespace>` as hostname by adding configuration below:
-```
-apiVersion: v1
-kind: Service
-metadata:
-  name: openldap
-  namespace: <target-namespace>
-spec:
-  type: ExternalName
-  externalName: openldap.openldap.svc.cluster.local
-```
+To connect from another pod inside kubernetes cluster internally via domain without causing traffic to
+hairpin (travel out of cluster then back in via ingress), you can add some coredns configuration below.
+- `kubectl edit cm -n kube-system coredns` to edit coredns config
+- add `rewrite` plugin with your domain
+  ```
+  apiVersion: v1
+  kind: ConfigMap
+  metadata:
+    name: coredns
+    namespace: kube-system
+  data:
+    Corefile: |
+      .:53 {
+          ...
+          ready
+          rewrite name openldap.domain.com openldap.openldap.svc.cluster.local
+          ...
+      }
+  ```
+- `kubectl rollout restart deploy -n kube-system coredns` to restart coredns pod

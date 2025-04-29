@@ -4,7 +4,7 @@
 
 ```
 helm repo add gitea-charts https://dl.gitea.com/charts
-helm template gitea gitea-charts/gitea -n gitea -f values.yaml > temp.yaml
+helm template gitea gitea-charts/gitea -n gitea -f values.yaml --version 11.0.1 > temp.yaml
 ```
 
 ## database
@@ -37,3 +37,26 @@ group:
     }
 }
 ```
+
+## in-cluster traffic
+
+To connect from another pod inside kubernetes cluster internally via domain without causing traffic to
+hairpin (travel out of cluster then back in via ingress), you can add some coredns configuration below.
+- `kubectl edit cm -n kube-system coredns` to edit coredns config
+- add `rewrite` plugin with your domain
+  ```
+  apiVersion: v1
+  kind: ConfigMap
+  metadata:
+    name: coredns
+    namespace: kube-system
+  data:
+    Corefile: |
+      .:53 {
+          ...
+          ready
+          rewrite name gitea.domain.com gitea.gitea.svc.cluster.local
+          ...
+      }
+  ```
+- `kubectl rollout restart deploy -n kube-system coredns` to restart coredns pod

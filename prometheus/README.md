@@ -15,6 +15,9 @@ helm upgrade prometheus-crd prometheus-community/prometheus-operator-crds -n pro
 helm install prometheus prometheus-community/kube-prometheus-stack -f values.yaml -n prometheus --create-namespace --version 69.7.4
 # upgrade release
 helm upgrade prometheus prometheus-community/kube-prometheus-stack -f values.yaml -n prometheus --version 69.7.4
+
+# template
+helm template prometheus prometheus-community/kube-prometheus-stack -f values.yaml -n prometheus --version 69.7.4 > temp.yaml
 ```
 
 ## external node

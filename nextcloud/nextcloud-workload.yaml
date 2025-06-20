@@ -24,7 +24,7 @@ spec:
     spec:
       initContainers:
         - name: init
-          image: nextcloud:31.0.4-apache
+          image: nextcloud:31.0.6-apache
           command: ["bash", "-c"]
           args:
             - update-ca-certificates;
@@ -41,7 +41,7 @@ spec:
               mountPath: /custom-ca
       containers:
         - name: nextcloud
-          image: nextcloud:31.0.4-apache
+          image: nextcloud:31.0.6-apache
           env:
             - name: OVERWRITEPROTOCOL
               value: "https"
@@ -146,7 +146,7 @@ spec:
               subPath: ca-certificates.crt
           resources: {}
         - name: nextcloud-cron
-          image: nextcloud:31.0.4-apache
+          image: nextcloud:31.0.6-apache
           command:
             - /cron.sh
           env:
@@ -222,7 +222,7 @@ spec:
               subPath: ca-certificates.crt
           resources: {}
         - name: nextcloud-haproxy
-          image: haproxytech/haproxy-alpine:3.0.9
+          image: haproxytech/haproxy-alpine:3.0.11
           env:
             - name: HAPROXY_BACKEND
               value: "localhost:80"

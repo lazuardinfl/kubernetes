@@ -63,6 +63,12 @@ postgresql-ha:
 redis-cluster:
   enabled: false
 
+valkey-cluster:
+  enabled: false
+
+valkey:
+  enabled: false
+
 service:
   ssh:
     type: NodePort

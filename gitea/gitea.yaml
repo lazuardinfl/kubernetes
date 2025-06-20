@@ -67,8 +67,9 @@ spec:
         fsGroup: 1000
       initContainers:
         - name: init-directories
-          image: docker.gitea.com/gitea:1.23.7-rootless
-          command: ["/usr/sbin/init_directory_structure.sh"]
+          image: docker.gitea.com/gitea:1.24.1-rootless
+          command:
+            - "/usr/sbinx/init_directory_structure.sh"
           env:
             - name: GITEA_APP_INI
               value: /data/gitea/conf/app.ini
@@ -80,7 +81,7 @@ spec:
               value: /tmp/gitea
           volumeMounts:
             - name: init
-              mountPath: /usr/sbin
+              mountPath: /usr/sbinx
             - name: temp
               mountPath: /tmp
             - name: data
@@ -90,8 +91,9 @@ spec:
               cpu: 100m
               memory: 128Mi
         - name: init-app-ini
-          image: docker.gitea.com/gitea:1.23.7-rootless
-          command: ["/usr/sbin/config_environment.sh"]
+          image: docker.gitea.com/gitea:1.24.1-rootless
+          command: 
+            - "/usr/sbinx/config_environment.sh"
           env:
             - name: GITEA_APP_INI
               value: /data/gitea/conf/app.ini
@@ -110,7 +112,7 @@ spec:
                 name: gitea-secret
           volumeMounts:
             - name: config
-              mountPath: /usr/sbin
+              mountPath: /usr/sbinx
             - name: temp
               mountPath: /tmp
             - name: data
@@ -122,8 +124,9 @@ spec:
               cpu: 100m
               memory: 128Mi
         - name: configure-gitea
-          image: docker.gitea.com/gitea:1.23.7-rootless
-          command: ["/usr/sbin/configure_gitea.sh"]
+          image: docker.gitea.com/gitea:1.24.1-rootless
+          command:
+            - "/usr/sbinx/configure_gitea.sh"
           securityContext:
             runAsUser: 1000
           env:
@@ -151,7 +154,7 @@ spec:
               value: keepUpdated
           volumeMounts:
             - name: init
-              mountPath: /usr/sbin
+              mountPath: /usr/sbinx
             - name: temp
               mountPath: /tmp
             - name: data
@@ -163,7 +166,7 @@ spec:
       terminationGracePeriodSeconds: 60
       containers:
         - name: gitea
-          image: docker.gitea.com/gitea:1.23.7-rootless
+          image: docker.gitea.com/gitea:1.24.1-rootless
           env:
             - name: SSH_LISTEN_PORT
               value: "2222"

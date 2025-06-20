@@ -109,9 +109,10 @@ spec:
     spec:
       containers:
         - name: keycloak
-          image: quay.io/keycloak/keycloak:26.1.5
+          image: quay.io/keycloak/keycloak:26.2.5
           args:
             - -Djgroups.dns.query=keycloak-discovery.$(POD_NAMESPACE)
+            - -Djgroups.bind.address=$(POD_IP)
             - --verbose
             - start
           env:
@@ -119,6 +120,11 @@ spec:
               valueFrom:
                 fieldRef:
                   fieldPath: metadata.namespace
+            - name: POD_IP
+              valueFrom:
+                fieldRef:
+                  apiVersion: v1
+                  fieldPath: status.podIP
             - name: KC_HTTP_PORT
               value: "8080"
             - name: KC_HTTPS_PORT

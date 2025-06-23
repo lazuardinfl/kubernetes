@@ -67,7 +67,7 @@ spec:
         fsGroup: 1000
       initContainers:
         - name: init-directories
-          image: docker.gitea.com/gitea:1.24.1-rootless
+          image: docker.gitea.com/gitea:1.24.2-rootless
           command:
             - "/usr/sbinx/init_directory_structure.sh"
           env:
@@ -91,7 +91,7 @@ spec:
               cpu: 100m
               memory: 128Mi
         - name: init-app-ini
-          image: docker.gitea.com/gitea:1.24.1-rootless
+          image: docker.gitea.com/gitea:1.24.2-rootless
           command: 
             - "/usr/sbinx/config_environment.sh"
           env:
@@ -124,7 +124,7 @@ spec:
               cpu: 100m
               memory: 128Mi
         - name: configure-gitea
-          image: docker.gitea.com/gitea:1.24.1-rootless
+          image: docker.gitea.com/gitea:1.24.2-rootless
           command:
             - "/usr/sbinx/configure_gitea.sh"
           securityContext:
@@ -166,7 +166,7 @@ spec:
       terminationGracePeriodSeconds: 60
       containers:
         - name: gitea
-          image: docker.gitea.com/gitea:1.24.1-rootless
+          image: docker.gitea.com/gitea:1.24.2-rootless
           env:
             - name: SSH_LISTEN_PORT
               value: "2222"

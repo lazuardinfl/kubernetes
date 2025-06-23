@@ -3,6 +3,8 @@
 pod ip -> `10.147.0.0/16` \
 services ip -> `10.97.0.0/16`
 
+to update or upgrade pod, delete first `kubectl delete -k`, then apply `kubectl apply -k`
+
 ## helm
 
 ```

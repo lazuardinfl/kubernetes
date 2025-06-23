@@ -2,8 +2,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.14.0
-    haproxy.org/client-native: v5.1.4
+    haproxy.org/client-native: v5.1.16-0.20250120132445-428abe2a833d
   name: tcps.ingress.v1.haproxy.org
 spec:
   group: ingress.v1.haproxy.org
@@ -54,20 +53,16 @@ spec:
                       description: |-
                         Acls ACL Lines Array
 
-
                         HAProxy ACL lines array (corresponds to acl directives)
-
 
                         swagger:model acls
                       items:
                         description: |-
                           ACL ACL Lines
 
-
                           The use of Access Control Lists (ACL) provides a flexible solution to perform
                           content switching and generally to take decisions based on content extracted
                           from the request, the response or any environmental status.
-
 
                           swagger:model acl
                         properties:
@@ -97,26 +92,21 @@ spec:
                         required:
                         - acl_name
                         - criterion
-                        - index
                         type: object
                       type: array
                     backend_switching_rule_list:
                       description: |-
                         BackendSwitchingRules Backend Switching Rules Array
 
-
                         HAProxy backend switching rules array (corresponds to use_backend directives)
-
 
                         swagger:model backend_switching_rules
                       items:
                         description: |-
                           BackendSwitchingRule Backend Switching Rule
 
-
                           HAProxy backend switching rule configuration (corresponds to use_backend directive)
                           Example: {"cond":"if","cond_test":"{ req_ssl_sni -i www.example.com }","index":0,"name":"test_backend"}
-
 
                           swagger:model backend_switching_rule
                         properties:
@@ -145,7 +135,6 @@ spec:
                             pattern: ^[^\s]+$
                             type: string
                         required:
-                        - index
                         - name
                         type: object
                       type: array
@@ -164,9 +153,7 @@ spec:
                         description: |-
                           Bind Bind
 
-
                           # HAProxy frontend bind configuration
-
 
                           swagger:model bind
                         properties:
@@ -487,12 +474,10 @@ spec:
                       description: |-
                         Captures Declare capture array
 
-
                         swagger:model captures
                       items:
                         description: |-
                           Capture Declare Capture
-
 
                           swagger:model capture
                         properties:
@@ -518,7 +503,6 @@ spec:
                             - response
                             type: string
                         required:
-                        - index
                         - length
                         - type
                         type: object
@@ -701,7 +685,6 @@ spec:
                         description: |-
                           Errorfile errorfile
 
-
                           swagger:model errorfile
                         properties:
                           code:
@@ -741,7 +724,6 @@ spec:
                       items:
                         description: |-
                           Errorfiles errorfiles
-
 
                           swagger:model errorfiles
                         properties:
@@ -834,19 +816,15 @@ spec:
                       description: |-
                         Filters Filters Array
 
-
                         HAProxy filters array (corresponds to filter directive)
-
 
                         swagger:model filters
                       items:
                         description: |-
                           Filter Filter
 
-
                           HAProxy filters
                           Example: {"index":0,"trace_name":"name","trace_rnd_parsing":true,"type":"trace"}
-
 
                           swagger:model filter
                         properties:
@@ -944,18 +922,17 @@ spec:
                             description: |-
                               type
                               Required: true
-                              Enum: [trace compression spoe cache fcgi-app bwlim-in bwlim-out]
+                              Enum: [bwlim-in bwlim-out cache compression fcgi-app spoe trace]
                             enum:
-                            - trace
-                            - compression
-                            - spoe
-                            - cache
-                            - fcgi-app
                             - bwlim-in
                             - bwlim-out
+                            - cache
+                            - compression
+                            - fcgi-app
+                            - spoe
+                            - trace
                             type: string
                         required:
-                        - index
                         - type
                         type: object
                       type: array
@@ -1123,18 +1100,14 @@ spec:
                       description: |-
                         LogTargets Log Target Array
 
-
                         HAProxy log target array (corresponds to log directives)
-
 
                         swagger:model log_targets
                       items:
                         description: |-
                           LogTarget Log Target
 
-
                           Per-instance logging of events and traffic.
-
 
                           swagger:model log_target
                         properties:
@@ -1239,8 +1212,6 @@ spec:
                             description: sample size
                             format: int64
                             type: integer
-                        required:
-                        - index
                         type: object
                       type: array
                     logasap:
@@ -1383,7 +1354,6 @@ spec:
                             description: |-
                               StatsAuth stats auth
 
-
                               swagger:model stats_auth
                             properties:
                               passwd:
@@ -1412,7 +1382,6 @@ spec:
                           items:
                             description: |-
                               StatsHTTPRequest stats http request
-
 
                               swagger:model stats_http_request
                             properties:
@@ -1544,26 +1513,22 @@ spec:
                       description: |-
                         TCPRequestRules TCP Request Rules Array
 
-
                         HAProxy TCP request rules array (corresponds to tcp-request directive)
-
 
                         swagger:model tcp_request_rules
                       items:
                         description: |-
                           TCPRequestRule TCP Request Rule
 
-
                           HAProxy TCP Request Rule configuration (corresponds to tcp-request)
                           Example: {"cond":"if","cond_test":"{ src 192.168.0.0/16 }","index":0,"type":"connection"}
-
 
                           swagger:model tcp_request_rule
                         properties:
                           action:
                             description: |-
                               action
-                              Enum: [accept attach-srv capture do-resolve expect-netscaler-cip expect-proxy reject sc-add-gpc sc-inc-gpc sc-inc-gpc0 sc-inc-gpc1 sc-set-gpt0 send-spoe-group set-dst-port set-dst set-priority set-src set-var silent-drop track-sc0 track-sc1 track-sc2 track-sc unset-var use-service lua set-bandwidth-limit set-src-port set-mark set-tos set-var-fmt set-log-level set-nice switch-mode]
+                              Enum: [accept attach-srv capture do-resolve expect-netscaler-cip expect-proxy lua reject sc-add-gpc sc-inc-gpc sc-inc-gpc0 sc-inc-gpc1 sc-set-gpt sc-set-gpt0 send-spoe-group set-bandwidth-limit set-dst-port set-dst set-log-level set-mark set-nice set-priority-class set-priority-offset set-src set-src-port set-tos set-var set-var-fmt silent-drop switch-mode track-sc0 track-sc1 track-sc2 track-sc unset-var use-service]
                             enum:
                             - accept
                             - attach-srv
@@ -1571,34 +1536,36 @@ spec:
                             - do-resolve
                             - expect-netscaler-cip
                             - expect-proxy
+                            - lua
                             - reject
                             - sc-add-gpc
                             - sc-inc-gpc
                             - sc-inc-gpc0
                             - sc-inc-gpc1
+                            - sc-set-gpt
                             - sc-set-gpt0
                             - send-spoe-group
+                            - set-bandwidth-limit
                             - set-dst-port
                             - set-dst
-                            - set-priority
+                            - set-log-level
+                            - set-mark
+                            - set-nice
+                            - set-priority-class
+                            - set-priority-offset
                             - set-src
+                            - set-src-port
+                            - set-tos
                             - set-var
+                            - set-var-fmt
                             - silent-drop
+                            - switch-mode
                             - track-sc0
                             - track-sc1
                             - track-sc2
                             - track-sc
                             - unset-var
                             - use-service
-                            - lua
-                            - set-bandwidth-limit
-                            - set-src-port
-                            - set-mark
-                            - set-tos
-                            - set-var-fmt
-                            - set-log-level
-                            - set-nice
-                            - switch-mode
                             type: string
                           bandwidth_limit_limit:
                             description: bandwidth limit limit
@@ -1616,8 +1583,8 @@ spec:
                           capture_sample:
                             description: |-
                               capture sample
-                              Pattern: ^[^\s]+$
-                            pattern: ^[^\s]+$
+                              Pattern: ^(?:[A-Za-z]+\("([A-Za-z\s]+)"\)|[A-Za-z]+)
+                            pattern: ^(?:[A-Za-z]+\("([A-Za-z\s]+)"\)|[A-Za-z]+)
                             type: string
                           cond:
                             description: |-
@@ -1681,14 +1648,6 @@ spec:
                             maximum: 1024
                             minimum: -1024
                             type: integer
-                          priority_type:
-                            description: |-
-                              priority type
-                              Enum: [class offset]
-                            enum:
-                            - class
-                            - offset
-                            type: string
                           resolve_protocol:
                             description: |-
                               resolve protocol
@@ -1703,6 +1662,10 @@ spec:
                           resolve_var:
                             description: resolve var
                             type: string
+                          rst_ttl:
+                            description: rst ttl
+                            format: int64
+                            type: integer
                           sc_idx:
                             description: sc idx
                             type: string
@@ -1775,7 +1738,6 @@ spec:
                             pattern: ^[^\s]+$
                             type: string
                         required:
-                        - index
                         - type
                         type: object
                       type: array

@@ -9,29 +9,14 @@ metadata:
   name: elastic-beats
 rules:
 - apiGroups: [""]
-  resources:
-  - namespaces
-  - nodes
-  - pods
-  - events
-  verbs:
-  - get
-  - list
-  - watch
+  resources: ["namespaces", "nodes", "pods", "events"]
+  verbs: ["get", "list", "watch"]
 - apiGroups: ["apps"]
-  resources:
-  - replicasets
-  verbs:
-  - get
-  - list
-  - watch
+  resources: ["replicasets"]
+  verbs: ["get", "list", "watch"]
 - apiGroups: ["batch"]
-  resources:
-  - jobs
-  verbs:
-  - get
-  - list
-  - watch
+  resources: ["jobs"]
+  verbs: ["get", "list", "watch"]
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
@@ -48,20 +33,35 @@ subjects:
 apiVersion: v1
 kind: Secret
 metadata:
+  name: elastic-roles
+type: Opaque
+stringData:
+  roles.yml: |-
+    system_index_superuser:
+      indices:
+      - names: ["*"]
+        privileges: ["all"]
+        allow_restricted_indices: true
+---
+apiVersion: v1
+kind: Secret
+metadata:
   name: elastic-admin-auth
 type: kubernetes.io/basic-auth
 data:
   username: username
   password: password
-  roles: superuser
+  roles: superuser,system_index_superuser
 ---
 apiVersion: elasticsearch.k8s.elastic.co/v1
 kind: Elasticsearch
 metadata:
   name: elasticsearch
 spec:
-  version: 8.17.3
+  version: 8.18.3
   auth:
+    roles:
+    - secretName: elastic-roles
     fileRealm:
     - secretName: elastic-admin-auth
   nodeSets:
@@ -96,7 +96,7 @@ kind: Kibana
 metadata:
   name: kibana
 spec:
-  version: 8.17.3
+  version: 8.18.3
   count: 1
   elasticsearchRef:
     name: elasticsearch
@@ -115,7 +115,7 @@ kind: Logstash
 metadata:
   name: logstash
 spec:
-  version: 8.17.3
+  version: 8.18.3
   count: 1
   elasticsearchRefs:
   - name: elasticsearch
@@ -194,7 +194,7 @@ metadata:
   name: filebeat
 spec:
   type: filebeat
-  version: 8.17.3
+  version: 8.18.3
   config:
     filebeat.autodiscover.providers:
     - type: kubernetes
@@ -202,16 +202,24 @@ spec:
       hints:
         enabled: true
         default_config:
-          type: container
+          type: filestream
+          id: kubernetes-container-logs-${data.kubernetes.pod.name}-${data.kubernetes.container.id}
           paths:
           - /var/log/containers/*${data.kubernetes.container.id}.log
-          json.ignore_decoding_error: true
+          parsers:
+          - container:
+              stream: all
+          - ndjson:
+              ignore_decoding_error: true
+          prospector:
+            scanner:
+              fingerprint.enabled: false
+              symlinks: true
+          file_identity.native: ~
     filebeat.modules:
     - module: system
-      syslog:
-        enabled: true
-      auth:
-        enabled: true
+      auth.enabled: true
+      syslog.enabled: true
     processors:
     - add_host_metadata: {}
     output.logstash:
@@ -250,7 +258,7 @@ metadata:
   name: packetbeat
 spec:
   type: packetbeat
-  version: 8.17.3
+  version: 8.18.3
   config:
     packetbeat.interfaces.device: any
     packetbeat.interfaces.type: af_packet

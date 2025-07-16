@@ -7,17 +7,17 @@
 helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
 
 # install crd
-helm install prometheus-crd prometheus-community/prometheus-operator-crds -n prometheus --create-namespace --version 18.0.1
+helm install prometheus-crd prometheus-community/prometheus-operator-crds -n prometheus --create-namespace --version 21.0.0
 # upgrade crd
-helm upgrade prometheus-crd prometheus-community/prometheus-operator-crds -n prometheus --version 18.0.1
+helm upgrade prometheus-crd prometheus-community/prometheus-operator-crds -n prometheus --version 21.0.0
 
 # install release
-helm install prometheus prometheus-community/kube-prometheus-stack -f values.yaml -n prometheus --create-namespace --version 69.7.4
+helm install prometheus prometheus-community/kube-prometheus-stack -f values.yaml -n prometheus --create-namespace --version 75.8.1
 # upgrade release
-helm upgrade prometheus prometheus-community/kube-prometheus-stack -f values.yaml -n prometheus --version 69.7.4
+helm upgrade prometheus prometheus-community/kube-prometheus-stack -f values.yaml -n prometheus --version 75.8.1
 
 # template
-helm template prometheus prometheus-community/kube-prometheus-stack -f values.yaml -n prometheus --version 69.7.4 > temp.yaml
+helm template prometheus prometheus-community/kube-prometheus-stack -f values.yaml -n prometheus --version 75.8.1 > temp.yaml
 ```
 
 ## external node

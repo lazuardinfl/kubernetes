@@ -1,10 +1,18 @@
 namespaceOverride: prometheus
 
+global:
+  imageRegistry: <registry.domain.com>
+
+alertmanager:
+  alertmanagerSpec:
+    nodeSelector:
+      kubernetes.io/hostname: <node hostname>
+
 grafana:
   namespaceOverride: prometheus
   defaultDashboardsTimezone: browser
-  adminUser: user
-  adminPassword: password
+  adminUser: <user>
+  adminPassword: <password>
   ingress:
     enabled: false
   extraExposePorts:
@@ -16,7 +24,7 @@ grafana:
       targetPort: https-proxy
   extraContainers: |
     - name: grafana-haproxy
-      image: haproxytech/haproxy-alpine:3.0.11
+      image: {{ .Values.global.imageRegistry }}/haproxytech/haproxy-alpine:3.0.11
       securityContext:
         runAsNonRoot: false
         runAsUser: 0
@@ -57,6 +65,8 @@ grafana:
     accessModes:
       - ReadWriteOnce
     size: 1G
+  nodeSelector:
+    kubernetes.io/hostname: <node hostname>
   grafana.ini:
     feature_toggles:
       enable: ssoSettingsLDAP
@@ -65,12 +75,34 @@ grafana:
 
 kube-state-metrics:
   namespaceOverride: prometheus
+  nodeSelector:
+    kubernetes.io/hostname: <node hostname>
 
 prometheus-node-exporter:
   namespaceOverride: prometheus
 
+prometheusOperator:
+  admissionWebhooks:
+    deployment:
+      image:
+        repository: <prometheus/admission-webhook>
+    patch:
+      image:
+        repository: <nginx/kube-webhook-certgen>
+      nodeSelector:
+        kubernetes.io/hostname: <node hostname>
+  image:
+    repository: <prometheus/prometheus-operator>
+  nodeSelector:
+    kubernetes.io/hostname: <node hostname>
+  prometheusConfigReloader:
+    image:
+      repository: <prometheus/prometheus-config-reloader>
+
 prometheus:
   prometheusSpec:
+    nodeSelector:
+      kubernetes.io/hostname: <node hostname>
     retention: 30d
     storageSpec:
       volumeClaimTemplate:
@@ -83,6 +115,11 @@ prometheus:
           resources:
             requests:
               storage: 1G
+
+thanos:
+  thanosRulerSpec:
+    nodeSelector:
+      kubernetes.io/hostname: <node hostname>
 
 extraManifests:
   - apiVersion: v1
@@ -182,19 +219,21 @@ extraManifests:
               serviceAccountName: prometheus-grafana-reloader
               containers:
                 - name: reloader
-                  image: alpine/k8s:latest
+                  image: "{{ .Values.global.imageRegistry }}/alpine/k8s:latest"
                   command: ["/bin/bash", "-c", "--"]
                   args:
                     - sleep 120;
                       kubectl exec -it deploy/prometheus-grafana -c grafana-haproxy -- pkill -SIGHUP haproxy;
               restartPolicy: OnFailure
+              nodeSelector:
+                kubernetes.io/hostname: <node hostname>
   - apiVersion: networking.k8s.io/v1
     kind: Ingress
     metadata:
       name: grafana-ingress
       namespace: "{{ .Values.grafana.namespaceOverride }}"
       annotations:
-        cert-manager.io/cluster-issuer: issuer
+        cert-manager.io/cluster-issuer: <issuer>
         haproxy.org/check: "false"
         haproxy.org/ssl-passthrough: "true"
         haproxy.org/send-proxy-protocol: "proxy-v2"
@@ -202,10 +241,10 @@ extraManifests:
       ingressClassName: haproxy
       tls:
         - hosts:
-          - grafana.domain.com
+          - <grafana.domain.com>
           secretName: prometheus-grafana-tls
       rules:
-        - host: grafana.domain.com
+        - host: <grafana.domain.com>
           http:
             paths:
               - path: /

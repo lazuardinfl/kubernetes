@@ -67,7 +67,7 @@ spec:
             readOnlyRootFilesystem: true
             runAsNonRoot: true
             runAsUser: 1000
-          image: emberstack/kubernetes-reflector:9.0.322
+          image: emberstack/kubernetes-reflector:9.1.22
           env:
             - name: ES_Serilog__MinimumLevel__Default
               value: "Information"

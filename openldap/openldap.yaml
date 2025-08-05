@@ -81,7 +81,7 @@ spec:
     spec:
       containers:
         - name: openldap
-          image: bitnami/openldap:2.6.9
+          image: bitnami/openldap:2.6.10
           env:
             - name: LDAP_ADD_SCHEMAS
               value: "yes"

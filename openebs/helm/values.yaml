@@ -1,3 +1,6 @@
+alloy:
+  enabled: false
+
 engines:
   local:
     lvm:
@@ -7,6 +10,9 @@ engines:
   replicated:
     mayastor:
       enabled: false
+
+loki:
+  enabled: false
 
 openebs-crds:
   csi:

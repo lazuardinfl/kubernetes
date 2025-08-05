@@ -53,6 +53,7 @@ data:
   other.config.php: |-
     <?php
     $CONFIG = array (
+      'share_folder' => '/Shared',
       'skeletondirectory' => '',
       'lost_password_link' => 'disabled',
       'has_internet_connection' => false,

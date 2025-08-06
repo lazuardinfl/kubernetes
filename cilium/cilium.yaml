@@ -149,7 +149,7 @@ data:
   #   - vxlan (default)
   #   - geneve
 
-  routing-mode: "native"
+  routing-mode: "tunnel"
   tunnel-protocol: "geneve"
   tunnel-source-port-range: "0-0"
   service-no-backend-response: "reject"
@@ -168,15 +168,14 @@ data:
   enable-masquerade-to-route-source: "false"
 
   enable-xt-socket-fallback: "true"
-  install-no-conntrack-iptables-rules: "true"
+  install-no-conntrack-iptables-rules: "false"
   iptables-random-fully: "false"
 
-  auto-direct-node-routes: "true"
+  auto-direct-node-routes: "false"
   direct-routing-skip-unreachable: "false"
   enable-bandwidth-manager: "true"
   enable-bbr: "false"
   enable-local-redirect-policy: "false"
-  ipv4-native-routing-cidr: 10.147.0.0/16
   enable-runtime-device-detection: "true"
 
   kube-proxy-replacement: "true"

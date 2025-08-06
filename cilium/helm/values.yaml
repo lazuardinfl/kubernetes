@@ -1,8 +1,7 @@
 operator:
   replicas: 1
 kubeProxyReplacement: true
-routingMode: native
-autoDirectNodeRoutes: true
+routingMode: tunnel
 tunnelProtocol: geneve
 loadBalancer:
   mode: dsr
@@ -11,7 +10,7 @@ loadBalancer:
   acceleration: best-effort
 bpf:
   masquerade: true
-installNoConntrackIptablesRules: true
+enableIPv4Masquerade: true
 socketLB:
   hostNamespaceOnly: true
 bandwidthManager:
@@ -22,4 +21,3 @@ ipam:
   mode: cluster-pool
   operator:
     clusterPoolIPv4PodCIDRList: 10.147.0.0/16
-ipv4NativeRoutingCIDR: 10.147.0.0/16

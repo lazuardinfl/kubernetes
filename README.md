@@ -2,7 +2,7 @@
 
 kubernetes bootstrap on bare metal
 - all cluster node has ip not behind nat
-- native routing of kernel
+- routing via encapsulation tunnel
 - cni without encryption
 - csi with local storage
 - external ingress mode

@@ -16,6 +16,8 @@ spec:
     type: RollingUpdate
   template:
     metadata:
+      annotations:
+        kubectl.kubernetes.io/default-container: cilium-agent
       labels:
         k8s-app: cilium
         app.kubernetes.io/name: cilium-agent
@@ -24,9 +26,11 @@ spec:
       securityContext:
         appArmorProfile:
           type: Unconfined
+        seccompProfile:
+          type: Unconfined
       containers:
       - name: cilium-agent
-        image: quay.io/cilium/cilium:v1.17.6
+        image: quay.io/cilium/cilium:v1.18.2
         command:
         - cilium-agent
         args:
@@ -40,7 +44,7 @@ spec:
             httpHeaders:
             - name: "brief"
               value: "true"
-          failureThreshold: 105
+          failureThreshold: 300
           periodSeconds: 2
           successThreshold: 1
           initialDelaySeconds: 5
@@ -94,6 +98,10 @@ spec:
           value: "192.168.0.1"
         - name: KUBERNETES_SERVICE_PORT
           value: "6443"
+        - name: KUBE_CLIENT_BACKOFF_BASE
+          value: "1"
+        - name: KUBE_CLIENT_BACKOFF_DURATION
+          value: "120"
         lifecycle:
           postStart:
             exec:
@@ -186,7 +194,7 @@ spec:
         resources: {}
       initContainers:
       - name: config
-        image: quay.io/cilium/cilium:v1.17.6
+        image: quay.io/cilium/cilium:v1.18.2
         command:
         - cilium-dbg
         - build-config
@@ -212,7 +220,7 @@ spec:
       # Required to mount cgroup2 filesystem on the underlying Kubernetes node.
       # We use nsenter command with host's cgroup and mount namespaces enabled.
       - name: mount-cgroup
-        image: quay.io/cilium/cilium:v1.17.6
+        image: quay.io/cilium/cilium:v1.18.2
         env:
         - name: CGROUP_ROOT
           value: /run/cilium/cgroupv2
@@ -248,7 +256,7 @@ spec:
             drop:
               - ALL
       - name: apply-sysctl-overwrites
-        image: quay.io/cilium/cilium:v1.17.6
+        image: quay.io/cilium/cilium:v1.18.2
         env:
         - name: BIN_PATH
           value: /opt/cni/bin
@@ -285,7 +293,7 @@ spec:
       # from a privileged container because the mount propagation bidirectional
       # only works from privileged containers.
       - name: mount-bpf-fs
-        image: quay.io/cilium/cilium:v1.17.6
+        image: quay.io/cilium/cilium:v1.18.2
         args:
         - 'mount | grep "/sys/fs/bpf type bpf" || mount -t bpf bpf /sys/fs/bpf'
         command:
@@ -300,7 +308,7 @@ spec:
           mountPath: /sys/fs/bpf
           mountPropagation: Bidirectional
       - name: clean-cilium-state
-        image: quay.io/cilium/cilium:v1.17.6
+        image: quay.io/cilium/cilium:v1.18.2
         command:
         - /init-container.sh
         env:
@@ -350,7 +358,7 @@ spec:
           mountPath: /var/run/cilium # wait-for-kube-proxy
       # Install the CNI binaries in an InitContainer so we don't have a writable host mount in the agent
       - name: install-cni-binaries
-        image: quay.io/cilium/cilium:v1.17.6
+        image: quay.io/cilium/cilium:v1.18.2
         command:
           - "/install-plugin.sh"
         resources:
@@ -531,9 +539,12 @@ spec:
         app.kubernetes.io/part-of: cilium
         app.kubernetes.io/name: cilium-operator
     spec:
+      securityContext:
+        seccompProfile:
+          type: RuntimeDefault
       containers:
       - name: cilium-operator
-        image: quay.io/cilium/operator-generic:v1.17.6
+        image: quay.io/cilium/operator-generic:v1.18.2
         command:
         - cilium-operator-generic
         args:
@@ -588,6 +599,11 @@ spec:
         - name: cilium-config-path
           mountPath: /tmp/cilium/config-map
           readOnly: true
+        securityContext:
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop:
+            - ALL
         terminationMessagePolicy: FallbackToLogsOnError
         resources: {}
       hostNetwork: true
@@ -607,7 +623,16 @@ spec:
       nodeSelector:
         kubernetes.io/os: linux
       tolerations:
-        - operator: Exists
+        - key: node-role.kubernetes.io/control-plane
+          operator: Exists
+        - key: node-role.kubernetes.io/master
+          operator: Exists
+        - key: node.kubernetes.io/not-ready
+          operator: Exists
+        - key: node.cloudprovider.kubernetes.io/uninitialized
+          operator: Exists
+        - key: node.cilium.io/agent-not-ready
+          operator: Exists
       volumes:
         # To read the configuration from the config map
       - name: cilium-config-path

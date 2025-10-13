@@ -30,6 +30,31 @@ spec:
               metadata:
                 name: speedtest-secret
           - patch: |-
+              apiVersion: v1
+              kind: ConfigMap
+              metadata:
+                name: speedtest-config
+              data:  
+                servers: |
+                  [
+                    {
+                      "name": <"Server 1">,
+                      "server": <"https://server-1.speedtest.domain.com/">,
+                      "dlURL": "garbage.php",
+                      "ulURL": "empty.php",
+                      "pingURL": "empty.php",
+                      "getIpURL": "getIP.php"
+                    },
+                    {
+                      "name": <"Server 2">,
+                      "server": <"https://server-2.speedtest.domain.com/">,
+                      "dlURL": "garbage.php",
+                      "ulURL": "empty.php",
+                      "pingURL": "empty.php",
+                      "getIpURL": "getIP.php"
+                    }
+                  ]
+          - patch: |-
               apiVersion: apps/v1
               kind: Deployment
               metadata:
@@ -43,22 +68,71 @@ spec:
                     nodeSelector:
                       kubernetes.io/hostname: <node-name>
           - patch: |-
+              apiVersion: apps/v1
+              kind: Deployment
+              metadata:
+                name: speedtest-backend
+              spec:
+                replicas: 2
+                template:
+                  spec:
+                    affinity:
+                      nodeAffinity:
+                        requiredDuringSchedulingIgnoredDuringExecution:
+                          nodeSelectorTerms:
+                            - matchExpressions:
+                                - key: kubernetes.io/hostname
+                                  operator: In
+                                  values:
+                                    - <lb-node-01>
+                                    - <lb-node-02>
+                    containers:
+                      - name: speedtest-backend
+                        image: <image-name>
+          - patch: |-
               apiVersion: networking.k8s.io/v1
               kind: Ingress
               metadata:
                 name: speedtest-ingress
                 annotations:
                   cert-manager.io/cluster-issuer: <issuer-name>
-          - patch: |-
-              - op: replace
-                path: /spec/tls/0/hosts/0
-                value: <speedtest.domain.com>
-              - op: replace
-                path: /spec/rules/0/host
-                value: <speedtest.domain.com>
-            target:
-              kind: Ingress
-              name: speedtest-ingress
+              spec:
+                tls:
+                  - hosts:
+                      - <speedtest.domain.com>
+                      - "*.<speedtest.domain.com>"
+                    secretName: speedtest-tls
+                rules:
+                  - host: <speedtest.domain.com>
+                    http:
+                      paths:
+                        - path: /
+                          pathType: Prefix
+                          backend:
+                            service:
+                              name: speedtest
+                              port:
+                                name: frontend
+                  - host: <server-1.speedtest.domain.com>
+                    http:
+                      paths:
+                        - path: /
+                          pathType: Prefix
+                          backend:
+                            service:
+                              name: speedtest
+                              port:
+                                name: backend
+                  - host: <server-2.speedtest.domain.com>
+                    http:
+                      paths:
+                        - path: /
+                          pathType: Prefix
+                          backend:
+                            service:
+                              name: speedtest
+                              port:
+                                name: backend
   syncPolicy:
     syncOptions:
       - CreateNamespace=true

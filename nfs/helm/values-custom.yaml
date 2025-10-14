@@ -1,0 +1,24 @@
+image:
+  nfs:
+    repository: <registry.domain.com/repo/nfsplugin>
+  csiProvisioner:
+    repository: <registry.domain.com/repo/csi-provisioner>
+  csiResizer:
+    repository: <registry.domain.com/repo/csi-resizer>
+  csiSnapshotter:
+    repository: <registry.domain.com/repo/csi-snapshotter>
+  livenessProbe:
+    repository: <registry.domain.com/repo/livenessprobe>
+  nodeDriverRegistrar:
+    repository: <registry.domain.com/repo/csi-node-driver-registrar>
+
+controller:
+  nodeSelector:
+    <label-key>: <label-value>
+
+node:
+  nodeSelector:
+    <label-key>: <label-value>
+
+storageClass:
+  create: false

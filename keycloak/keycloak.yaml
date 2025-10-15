@@ -96,7 +96,7 @@ metadata:
     app.kubernetes.io/instance: keycloak
 spec:
   replicas: 1
-  serviceName: ""
+  serviceName: keycloak-discovery
   selector:
     matchLabels:
       app: keycloak
@@ -109,9 +109,8 @@ spec:
     spec:
       containers:
         - name: keycloak
-          image: quay.io/keycloak/keycloak:26.2.5
+          image: quay.io/keycloak/keycloak:26.3.5
           args:
-            - -Djgroups.dns.query=keycloak-discovery.$(POD_NAMESPACE)
             - -Djgroups.bind.address=$(POD_IP)
             - --verbose
             - start
@@ -139,8 +138,6 @@ spec:
               value: "true"
             - name: KC_CACHE
               value: ispn
-            - name: KC_CACHE_STACK
-              value: kubernetes
             - name: KC_TRUSTSTORE_PATHS
               value: /var/run/secrets/kubernetes.io/serviceaccount/ca.crt
             - name: KC_TRACING_SERVICE_NAME
@@ -194,6 +191,8 @@ spec:
             successThreshold: 1
             timeoutSeconds: 1
           resources:
+            requests:
+              memory: 1700Mi
             limits:
               memory: 2Gi
           volumeMounts:

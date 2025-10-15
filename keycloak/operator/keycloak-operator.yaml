@@ -2,12 +2,12 @@ apiVersion: v1
 kind: ServiceAccount
 metadata:
   annotations:
-    app.quarkus.io/quarkus-version: 3.20.1
+    app.quarkus.io/quarkus-version: 3.20.3
     app.quarkus.io/vcs-uri: https://github.com/keycloak/keycloak.git
-    app.quarkus.io/build-timestamp: 2025-05-28 - 06:54:27 +0000
+    app.quarkus.io/build-timestamp: 2025-09-25 - 06:30:25 +0000
   labels:
     app.kubernetes.io/name: keycloak-operator
-    app.kubernetes.io/version: 26.2.5
+    app.kubernetes.io/version: 26.3.5
     app.kubernetes.io/managed-by: quarkus
   name: keycloak-operator
 ---
@@ -28,7 +28,7 @@ kind: ClusterRole
 metadata:
   labels:
     app.kubernetes.io/name: keycloak-operator
-    app.kubernetes.io/version: 26.2.5
+    app.kubernetes.io/version: 26.3.5
   name: keycloakrealmimportcontroller-cluster-role
 rules:
   - apiGroups:
@@ -74,7 +74,7 @@ kind: ClusterRole
 metadata:
   labels:
     app.kubernetes.io/name: keycloak-operator
-    app.kubernetes.io/version: 26.2.5
+    app.kubernetes.io/version: 26.3.5
   name: keycloakcontroller-cluster-role
 rules:
   - apiGroups:
@@ -252,7 +252,7 @@ kind: RoleBinding
 metadata:
   labels:
     app.kubernetes.io/name: keycloak-operator
-    app.kubernetes.io/version: 26.2.5
+    app.kubernetes.io/version: 26.3.5
   name: keycloakrealmimportcontroller-role-binding
 roleRef:
   kind: ClusterRole
@@ -267,7 +267,7 @@ kind: RoleBinding
 metadata:
   labels:
     app.kubernetes.io/name: keycloak-operator
-    app.kubernetes.io/version: 26.2.5
+    app.kubernetes.io/version: 26.3.5
   name: keycloakcontroller-role-binding
 roleRef:
   kind: ClusterRole
@@ -282,7 +282,7 @@ kind: RoleBinding
 metadata:
   labels:
     app.kubernetes.io/name: keycloak-operator
-    app.kubernetes.io/version: 26.2.5
+    app.kubernetes.io/version: 26.3.5
   name: keycloak-operator-view
 roleRef:
   kind: ClusterRole
@@ -296,12 +296,12 @@ apiVersion: v1
 kind: Service
 metadata:
   annotations:
-    app.quarkus.io/quarkus-version: 3.20.1
+    app.quarkus.io/quarkus-version: 3.20.3
     app.quarkus.io/vcs-uri: https://github.com/keycloak/keycloak.git
-    app.quarkus.io/build-timestamp: 2025-05-28 - 06:54:27 +0000
+    app.quarkus.io/build-timestamp: 2025-09-25 - 06:30:25 +0000
   labels:
     app.kubernetes.io/name: keycloak-operator
-    app.kubernetes.io/version: 26.2.5
+    app.kubernetes.io/version: 26.3.5
     app.kubernetes.io/managed-by: quarkus
   name: keycloak-operator
 spec:
@@ -318,12 +318,12 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   annotations:
-    app.quarkus.io/quarkus-version: 3.20.1
+    app.quarkus.io/quarkus-version: 3.20.3
     app.quarkus.io/vcs-uri: https://github.com/keycloak/keycloak.git
-    app.quarkus.io/build-timestamp: 2025-05-28 - 06:54:27 +0000
+    app.quarkus.io/build-timestamp: 2025-09-25 - 06:30:25 +0000
   labels:
     app.kubernetes.io/name: keycloak-operator
-    app.kubernetes.io/version: 26.2.5
+    app.kubernetes.io/version: 26.3.5
     app.kubernetes.io/managed-by: quarkus
   name: keycloak-operator
 spec:
@@ -334,13 +334,13 @@ spec:
   template:
     metadata:
       annotations:
-        app.quarkus.io/quarkus-version: 3.20.1
+        app.quarkus.io/quarkus-version: 3.20.3
         app.quarkus.io/vcs-uri: https://github.com/keycloak/keycloak.git
-        app.quarkus.io/build-timestamp: 2025-05-28 - 06:54:27 +0000
+        app.quarkus.io/build-timestamp: 2025-09-25 - 06:30:25 +0000
       labels:
         app.kubernetes.io/managed-by: quarkus
         app.kubernetes.io/name: keycloak-operator
-        app.kubernetes.io/version: 26.2.5
+        app.kubernetes.io/version: 26.3.5
     spec:
       containers:
         - env:
@@ -349,8 +349,8 @@ spec:
                 fieldRef:
                   fieldPath: metadata.namespace
             - name: RELATED_IMAGE_KEYCLOAK
-              value: quay.io/keycloak/keycloak:26.2.5
-          image: quay.io/keycloak/keycloak-operator:26.2.5
+              value: quay.io/keycloak/keycloak:26.3.5
+          image: quay.io/keycloak/keycloak-operator:26.3.5
           livenessProbe:
             failureThreshold: 3
             httpGet:

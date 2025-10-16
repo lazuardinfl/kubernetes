@@ -4,7 +4,7 @@
 
 ```
 helm repo add nextcloud https://nextcloud.github.io/helm
-helm template nextcloud nextcloud/nextcloud -n nextcloud -f values.yaml --version 7.0.0 > temp.yaml
+helm template nextcloud nextcloud/nextcloud -n nextcloud -f values.yaml --version 8.0.3 > temp.yaml
 ```
 
 ## database

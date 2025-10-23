@@ -63,6 +63,13 @@ data:
         1 => '127.0.0.1',
       ),
     );
+  logging.config.php: |-
+    <?php
+    $CONFIG = array (
+      'log_type' => 'file',
+      'logfile' => '/var/log/nextcloud/nextcloud.log',
+      'loglevel' => 1,
+    );
   .htaccess: |-
     # line below if for Apache 2.4
     <ifModule mod_authz_core.c>

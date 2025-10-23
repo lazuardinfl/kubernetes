@@ -21,6 +21,14 @@ spec:
         app.kubernetes.io/name: nextcloud
         app.kubernetes.io/instance: nextcloud
         app.kubernetes.io/component: app
+      annotations:
+        co.elastic.logs/processors.rename.fields.0.from: "url"
+        co.elastic.logs/processors.rename.fields.1.to: "url.path"
+        co.elastic.logs/processors.rename.fields.2.from: "user"
+        co.elastic.logs/processors.rename.fields.3.to: "user.id"
+        co.elastic.logs/processors.rename.ignore_missing: "true"
+        co.elastic.logs/processors.drop_fields.fields.0: "exception.Trace"
+        co.elastic.logs/processors.drop_fields.ignore_missing: "true"
     spec:
       initContainers:
         - name: init
@@ -102,9 +110,15 @@ spec:
             - name: nextcloud-main
               mountPath: /var/www/html/themes
               subPath: themes
+            - name: nextcloud-main
+              mountPath: /var/log/nextcloud
+              subPath: log
             - name: nextcloud-config
               mountPath: /var/www/html/config/other.config.php
               subPath: other.config.php
+            - name: nextcloud-config
+              mountPath: /var/www/html/config/logging.config.php
+              subPath: logging.config.php
             - name: nextcloud-config
               mountPath: /var/www/html/config/.htaccess
               subPath: .htaccess
@@ -147,8 +161,7 @@ spec:
           resources: {}
         - name: nextcloud-cron
           image: nextcloud:31.0.9-apache
-          command:
-            - /cron.sh
+          command: ["/cron.sh"]
           env:
             - name: OVERWRITEPROTOCOL
               value: "https"
@@ -181,9 +194,15 @@ spec:
             - name: nextcloud-main
               mountPath: /var/www/html/themes
               subPath: themes
+            - name: nextcloud-main
+              mountPath: /var/log/nextcloud
+              subPath: log
             - name: nextcloud-config
               mountPath: /var/www/html/config/other.config.php
               subPath: other.config.php
+            - name: nextcloud-config
+              mountPath: /var/www/html/config/logging.config.php
+              subPath: logging.config.php
             - name: nextcloud-config
               mountPath: /var/www/html/config/.htaccess
               subPath: .htaccess
@@ -220,6 +239,14 @@ spec:
             - name: ca
               mountPath: /etc/ssl/certs/ca-certificates.crt
               subPath: ca-certificates.crt
+          resources: {}
+        - name: nextcloud-log
+          image: alpine:latest
+          command: ["tail", "-n", "0", "-F", "/var/log/nextcloud/nextcloud.log"]
+          volumeMounts:
+            - name: nextcloud-main
+              mountPath: /var/log/nextcloud
+              subPath: log
           resources: {}
         - name: nextcloud-haproxy
           image: haproxytech/haproxy-alpine:3.2.6

@@ -159,6 +159,10 @@ spec:
         app.kubernetes.io/name: vault
         app.kubernetes.io/instance: vault
         component: server
+      annotations:
+        co.elastic.logs/processors.rename.fields.0.from: "error"
+        co.elastic.logs/processors.rename.fields.1.to: "error.message"
+        co.elastic.logs/processors.rename.ignore_missing: "true"
     spec:
       affinity:
         podAntiAffinity:

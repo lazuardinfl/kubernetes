@@ -1,0 +1,117 @@
+apiVersion: v1
+kind: Secret
+metadata:
+  name: bitly-secret
+  labels:
+    app.kubernetes.io/name: bitly
+  annotations:
+    avp.kubernetes.io/path: "secret/data/system/bitly"
+type: Opaque
+data:
+  JWT_SECRET: <jwt_secret | base64encode>
+  DB_HOST: <db_host | base64encode>
+  DB_PORT: <db_port | base64encode>
+  DB_NAME: <db_name | base64encode>
+  DB_USER: <db_user | base64encode>
+  DB_PASSWORD: <db_password | base64encode>
+  REDIS_HOST: <redis_host | base64encode>
+  REDIS_PORT: <redis_port | base64encode>
+  REDIS_PASSWORD: <redis_password | base64encode>
+  REDIS_DB: <redis_db | base64encode>
+  OIDC_ISSUER: <oidc_issuer | base64encode>
+  OIDC_CLIENT_ID: <oidc_client_id | base64encode>
+  OIDC_CLIENT_SECRET: <oidc_client_secret | base64encode>
+  OIDC_SCOPE: <oidc_scope | base64encode>
+  OIDC_EMAIL_CLAIM: <oidc_email_claim | base64encode>
+  CONTACT_EMAIL: <contact_email | base64encode>
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: bitly
+  labels:
+    app.kubernetes.io/name: bitly
+spec:
+  type: ClusterIP
+  selector:
+    app.kubernetes.io/name: bitly
+  ports:
+    - name: http
+      port: 3000
+      targetPort: http
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: bitly
+  labels:
+    app.kubernetes.io/name: bitly
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: bitly
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: bitly
+    spec:
+      containers:
+        - name: bitly
+          image: kutt/kutt:main
+          env:
+            - name: SITE_NAME
+              value: "Bitly"
+            - name: DEFAULT_DOMAIN
+              value: "bitly.domain.com"
+            - name: DISALLOW_REGISTRATION
+              value: "true"
+            - name: DISALLOW_LOGIN_FORM
+              value: "false"
+            - name: DISALLOW_ANONYMOUS_LINKS
+              value: "true"
+            - name: TRUST_PROXY
+              value: "true"
+            - name: DB_CLIENT
+              value: "pg"
+            - name: DB_SSL
+              value: "false"
+            - name: REDIS_ENABLED
+              value: "true"
+            - name: MAIL_ENABLED
+              value: "false"
+            - name: OIDC_ENABLED
+              value: "true"
+          envFrom:
+            - secretRef:
+                name: bitly-secret
+          ports:
+            - name: http
+              containerPort: 3000
+          resources: {}
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: bitly-ingress
+  labels:
+    app.kubernetes.io/name: bitly
+  annotations:
+    cert-manager.io/cluster-issuer: "issuer"
+spec:
+  ingressClassName: haproxy
+  tls:
+    - hosts:
+        - bitly.domain.com
+      secretName: bitly-tls
+  rules:
+    - host: bitly.domain.com
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: bitly
+                port:
+                  name: http

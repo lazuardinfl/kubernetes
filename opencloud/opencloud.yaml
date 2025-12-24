@@ -1,0 +1,306 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: opencloud-config
+  labels:
+    app.kubernetes.io/name: opencloud
+data:
+  csp.yaml: |-
+    directives:
+      child-src:
+        - '''self'''
+      connect-src:
+        - '''self'''
+        - 'blob:'
+        - 'https://raw.githubusercontent.com/opencloud-eu/awesome-apps/'
+        - 'https://update.opencloud.eu/'
+        - 'https://${IDP_DOMAIN}/'
+      default-src:
+        - '''none'''
+      font-src:
+        - '''self'''
+      frame-ancestors:
+        - '''self'''
+      frame-src:
+        - '''self'''
+        - 'blob:'
+        - 'https://embed.diagrams.net/'
+        - 'https://docs.opencloud.eu'
+      img-src:
+        - '''self'''
+        - 'data:'
+        - 'blob:'
+        - 'https://raw.githubusercontent.com/opencloud-eu/awesome-apps/'
+        - 'https://tile.openstreetmap.org/'
+      manifest-src:
+        - '''self'''
+      media-src:
+        - '''self'''
+      object-src:
+        - '''self'''
+        - 'blob:'
+      script-src:
+        - '''self'''
+        - '''unsafe-inline'''
+        - 'https://${IDP_DOMAIN}/'
+      style-src:
+        - '''self'''
+        - '''unsafe-inline'''
+  proxy.yaml: |-
+    role_assignment:
+      oidc_role_mapper:
+        role_mapping:
+          - role_name: admin
+            claim_value: ${OIDC_CLAIM_ROLE_ADMIN}
+          - role_name: spaceadmin
+            claim_value: ${OIDC_CLAIM_ROLE_SPACEADMIN}
+          - role_name: user
+            claim_value: ${OIDC_CLAIM_ROLE_USER}
+          - role_name: user-light
+            claim_value: ${OIDC_CLAIM_ROLE_GUEST}
+    role_quotas:
+      71881883-1768-46bd-a24d-a356a2afdf7f: 100000000
+      2aadd357-682c-406b-8874-293091995fdd: 100000000
+      d7beeea8-8ff4-406b-8fb6-ab2dd81e6b11: 100000000
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: opencloud-secret
+  labels:
+    app.kubernetes.io/name: opencloud
+type: Opaque
+data:
+  IDP_DOMAIN: keycloak.domain.com
+  OC_OIDC_ISSUER: https://keycloak.domain.com/realms/org
+  WEB_OIDC_CLIENT_ID: web
+  WEB_OPTION_ACCOUNT_EDIT_LINK_HREF: https://keycloak.domain.com/realms/org/account
+  PROXY_USER_OIDC_CLAIM: preferred_username
+  PROXY_USER_CS3_CLAIM: username
+  PROXY_ROLE_ASSIGNMENT_OIDC_CLAIM: roles
+  OIDC_CLAIM_ROLE_ADMIN: opencloudAdmin
+  OIDC_CLAIM_ROLE_SPACEADMIN: opencloudSpaceAdmin
+  OIDC_CLAIM_ROLE_USER: opencloudUser
+  OIDC_CLAIM_ROLE_GUEST: opencloudGuest
+  OC_LDAP_URI: ldaps://openldap.domain.com:636
+  OC_LDAP_BIND_DN: cn=admin,dc=domain,dc=com
+  OC_LDAP_BIND_PASSWORD: password
+  OC_LDAP_USER_BASE_DN: ou=users,dc=domain,dc=com
+  OC_LDAP_USER_FILTER: (memberOf=cn=user,ou=opencloud,ou=groups,dc=domain,dc=com)
+  OC_LDAP_USER_OBJECTCLASS: inetOrgPerson
+  OC_LDAP_USER_SCHEMA_DISPLAYNAME: cn
+  OC_LDAP_USER_SCHEMA_ID: entryUUID
+  OC_LDAP_USER_SCHEMA_MAIL: mail
+  OC_LDAP_USER_SCHEMA_USERNAME: uid
+  OC_LDAP_USER_SCOPE: sub
+  OC_LDAP_GROUP_BASE_DN: ou=groups,dc=domain,dc=com
+  OC_LDAP_GROUP_FILTER: (|(ou:dn:=opencloud)(ou:dn:=Org))
+  OC_LDAP_GROUP_OBJECTCLASS: groupOfNames
+  OC_LDAP_GROUP_SCHEMA_DISPLAYNAME: cn
+  OC_LDAP_GROUP_SCHEMA_GROUPNAME: cn
+  OC_LDAP_GROUP_SCHEMA_ID: entryUUID
+  OC_LDAP_GROUP_SCHEMA_MEMBER: member
+  OC_LDAP_GROUP_SCOPE: sub
+  AUTH_APP_JSONCS3_PASSWORD_GENERATOR: random
+  AUTH_APP_JSONCS3_RANDOM_PASSWORD_LENGTH: "12"
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: opencloud-pvc
+  labels:
+    app.kubernetes.io/name: opencloud
+spec:
+  storageClassName: openebs-local
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 1G
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: opencloud
+  labels:
+    app.kubernetes.io/name: opencloud
+spec:
+  type: ClusterIP
+  selector:
+    app.kubernetes.io/name: opencloud
+  ports:
+    - name: https
+      port: 443
+      targetPort: https
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: opencloud
+  labels:
+    app.kubernetes.io/name: opencloud
+  annotations:
+    secret.reloader.stakater.com/reload: "opencloud-tls"
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: opencloud
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: opencloud
+    spec:
+      securityContext:
+        fsGroup: 1000
+      initContainers:
+        - name: init
+          image: opencloudeu/opencloud:4.0.1
+          command: ["bash", "-c"]
+          args:
+            - update-ca-certificates;
+              cp /etc/ssl/certs/ca-certificates.crt /custom-ca/;
+              chown root:root /custom-ca/ca-certificates.crt;
+              chmod 644 /custom-ca/ca-certificates.crt;
+          securityContext:
+            runAsUser: 0
+          volumeMounts:
+            - name: certs
+              mountPath: /usr/local/share/ca-certificates
+            - name: ca
+              mountPath: /custom-ca
+      containers:
+        - name: opencloud
+          image: opencloudeu/opencloud:4.0.1
+          command: ["/bin/sh"]
+          args: ["-c", "opencloud init || true; opencloud server"]
+          env:
+            - name: OC_URL
+              value: "https://opencloud.domain.com"
+            - name: OC_INSECURE
+              value: "false"
+            - name: OC_EXCLUDE_RUN_SERVICES
+              value: "idm,idp"
+            - name: OC_LOG_LEVEL
+              value: "info"
+            - name: OC_LDAP_INSECURE
+              value: "false"
+            - name: OC_LDAP_CACERT
+              value: "/etc/ssl/certs/ca-certificates.crt"
+            - name: OC_LDAP_DISABLE_USER_MECHANISM
+              value: "none"
+            - name: OC_LDAP_SERVER_WRITE_ENABLED
+              value: "false"
+            - name: OC_SHARING_PUBLIC_SHARE_MUST_HAVE_PASSWORD
+              value: "false"
+            - name: OC_SHARING_PUBLIC_WRITEABLE_SHARE_MUST_HAVE_PASSWORD
+              value: "false"
+            - name: PROXY_HTTP_ADDR
+              value: "0.0.0.0:9200"
+            - name: PROXY_TLS
+              value: "true"
+            - name: PROXY_TRANSPORT_TLS_CERT
+              value: "/etc/opencloud/certs/tls.crt"
+            - name: PROXY_TRANSPORT_TLS_KEY
+              value: "/etc/opencloud/certs/tls.key"
+            - name: PROXY_CSP_CONFIG_FILE_LOCATION
+              value: "/etc/opencloud/csp.yaml"
+            - name: PROXY_AUTOPROVISION_ACCOUNTS
+              value: "false"
+            - name: PROXY_ROLE_ASSIGNMENT_DRIVER
+              value: "oidc"
+            - name: PROXY_OIDC_REWRITE_WELLKNOWN
+              value: "true"
+            - name: FRONTEND_ARCHIVER_MAX_NUM_FILES
+              value: "100000"
+            - name: FRONTEND_ARCHIVER_MAX_SIZE
+              value: "107374182400"
+            - name: FRONTEND_CHECK_FOR_UPDATES
+              value: "false"
+            - name: FRONTEND_READONLY_USER_ATTRIBUTES
+              value: "user.onPremisesSamAccountName,user.displayName,user.mail,user.passwordProfile,user.appRoleAssignments,user.memberOf"
+            - name: GRAPH_ASSIGN_DEFAULT_USER_ROLE
+              value: "false"
+            - name: GRAPH_USERNAME_MATCH
+              value: "none"
+            - name: GROUPS_DRIVER
+              value: "ldap"
+            - name: IDM_CREATE_DEMO_USERS
+              value: "false"
+            - name: SETTINGS_SETUP_DEFAULT_ASSIGNMENTS
+              value: "false"
+          envFrom:
+            - secretRef:
+                name: opencloud-secret
+          ports:
+            - name: https
+              containerPort: 9200
+          volumeMounts:
+            - name: certs
+              mountPath: /etc/opencloud/certs
+              readOnly: true
+            - name: config
+              mountPath: /etc/opencloud/csp.yaml
+              subPath: csp.yaml
+              readOnly: true
+            - name: config
+              mountPath: /etc/opencloud/proxy.yaml
+              subPath: proxy.yaml
+              readOnly: true
+            - name: data
+              mountPath: /etc/opencloud
+              subPath: config
+            - name: data
+              mountPath: /var/lib/opencloud
+              subPath: data
+            - name: ca
+              mountPath: /etc/ssl/certs/ca-certificates.crt
+              subPath: ca-certificates.crt
+          resources: {}
+      volumes:
+        - name: certs
+          projected:
+            sources:
+              - secret:
+                  name: opencloud-tls
+              - secret:
+                  name: private-ca
+                  optional: true
+        - name: config
+          configMap:
+            name: opencloud-config
+        - name: data
+          persistentVolumeClaim:
+            claimName: opencloud-pvc
+        - name: ca
+          emptyDir: {}
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: opencloud-ingress
+  labels:
+    app.kubernetes.io/name: opencloud
+  annotations:
+    cert-manager.io/cluster-issuer: "issuer"
+    haproxy.org/server-ssl: "true"
+    haproxy.org/check: "false"
+spec:
+  ingressClassName: haproxy
+  tls:
+    - hosts:
+        - opencloud.domain.com
+      secretName: opencloud-tls
+  rules:
+    - host: opencloud.domain.com
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: opencloud
+                port:
+                  name: https

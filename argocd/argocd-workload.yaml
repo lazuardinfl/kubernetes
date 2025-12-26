@@ -15,6 +15,10 @@ spec:
       labels:
         app.kubernetes.io/name: argocd-applicationset-controller
       annotations:
+        co.elastic.logs/processors.move_fields.to: "argocd."
+        co.elastic.logs/processors.move_fields.exclude.0: "container"
+        co.elastic.logs/processors.move_fields.exclude.1: "kubernetes"
+        co.elastic.logs/processors.move_fields.ignore_missing: "true"
         co.elastic.logs/processors.rename.fields.0.from: "error"
         co.elastic.logs/processors.rename.fields.1.to: "error.message"
         co.elastic.logs/processors.rename.ignore_missing: "true"
@@ -265,6 +269,10 @@ spec:
       labels:
         app.kubernetes.io/name: argocd-dex-server
       annotations:
+        co.elastic.logs/processors.move_fields.to: "argocd."
+        co.elastic.logs/processors.move_fields.exclude.0: "container"
+        co.elastic.logs/processors.move_fields.exclude.1: "kubernetes"
+        co.elastic.logs/processors.move_fields.ignore_missing: "true"
         co.elastic.logs/processors.rename.fields.0.from: "error"
         co.elastic.logs/processors.rename.fields.1.to: "error.message"
         co.elastic.logs/processors.rename.ignore_missing: "true"
@@ -391,6 +399,10 @@ spec:
       labels:
         app.kubernetes.io/name: argocd-notifications-controller
       annotations:
+        co.elastic.logs/processors.move_fields.to: "argocd."
+        co.elastic.logs/processors.move_fields.exclude.0: "container"
+        co.elastic.logs/processors.move_fields.exclude.1: "kubernetes"
+        co.elastic.logs/processors.move_fields.ignore_missing: "true"
         co.elastic.logs/processors.rename.fields.0.from: "error"
         co.elastic.logs/processors.rename.fields.1.to: "error.message"
         co.elastic.logs/processors.rename.ignore_missing: "true"
@@ -493,6 +505,10 @@ spec:
       labels:
         app.kubernetes.io/name: argocd-repo-server
       annotations:
+        co.elastic.logs/processors.move_fields.to: "argocd."
+        co.elastic.logs/processors.move_fields.exclude.0: "container"
+        co.elastic.logs/processors.move_fields.exclude.1: "kubernetes"
+        co.elastic.logs/processors.move_fields.ignore_missing: "true"
         co.elastic.logs/processors.rename.fields.0.from: "error"
         co.elastic.logs/processors.rename.fields.1.to: "error.message"
         co.elastic.logs/processors.rename.ignore_missing: "true"
@@ -939,6 +955,10 @@ spec:
       labels:
         app.kubernetes.io/name: argocd-server
       annotations:
+        co.elastic.logs/processors.move_fields.to: "argocd."
+        co.elastic.logs/processors.move_fields.exclude.0: "container"
+        co.elastic.logs/processors.move_fields.exclude.1: "kubernetes"
+        co.elastic.logs/processors.move_fields.ignore_missing: "true"
         co.elastic.logs/processors.rename.fields.0.from: "error"
         co.elastic.logs/processors.rename.fields.1.to: "error.message"
         co.elastic.logs/processors.rename.ignore_missing: "true"
@@ -1353,6 +1373,10 @@ spec:
       labels:
         app.kubernetes.io/name: argocd-application-controller
       annotations:
+        co.elastic.logs/processors.move_fields.to: "argocd."
+        co.elastic.logs/processors.move_fields.exclude.0: "container"
+        co.elastic.logs/processors.move_fields.exclude.1: "kubernetes"
+        co.elastic.logs/processors.move_fields.ignore_missing: "true"
         co.elastic.logs/processors.rename.fields.0.from: "error"
         co.elastic.logs/processors.rename.fields.1.to: "error.message"
         co.elastic.logs/processors.rename.ignore_missing: "true"

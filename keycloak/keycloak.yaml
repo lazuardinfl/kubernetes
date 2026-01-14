@@ -109,7 +109,7 @@ spec:
     spec:
       containers:
         - name: keycloak
-          image: quay.io/keycloak/keycloak:26.3.5
+          image: quay.io/keycloak/keycloak:26.4.7
           args:
             - -Djgroups.bind.address=$(POD_IP)
             - --verbose
@@ -122,8 +122,11 @@ spec:
             - name: POD_IP
               valueFrom:
                 fieldRef:
-                  apiVersion: v1
                   fieldPath: status.podIP
+            - name: KC_SPI_CACHE_EMBEDDED_DEFAULT_MACHINE_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: spec.nodeName
             - name: KC_HTTP_PORT
               value: "8080"
             - name: KC_HTTPS_PORT
@@ -150,6 +153,10 @@ spec:
               value: json
             - name: KC_LOG_CONSOLE_JSON_FORMAT
               value: ecs
+            - name: KC_HTTP_ACCESS_LOG_ENABLED
+              value: "true"
+            - name: KC_HTTP_ACCESS_LOG_PATTERN
+              value: combined
           envFrom:
             - secretRef:
                 name: keycloak-secret

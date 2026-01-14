@@ -2,18 +2,20 @@ apiVersion: v1
 kind: ServiceAccount
 metadata:
   annotations:
-    app.quarkus.io/quarkus-version: 3.20.3
+    app.quarkus.io/quarkus-version: 3.27.1
     app.quarkus.io/vcs-uri: https://github.com/keycloak/keycloak.git
-    app.quarkus.io/build-timestamp: 2025-09-25 - 06:30:25 +0000
+    app.quarkus.io/build-timestamp: 2025-12-01 - 08:21:19 +0000
   labels:
     app.kubernetes.io/name: keycloak-operator
-    app.kubernetes.io/version: 26.3.5
+    app.kubernetes.io/version: 26.4.7
     app.kubernetes.io/managed-by: quarkus
   name: keycloak-operator
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
+  labels:
+    app.kubernetes.io/name: keycloak-operator
   name: keycloak-operator-clusterrole
 rules:
   - apiGroups:
@@ -28,7 +30,7 @@ kind: ClusterRole
 metadata:
   labels:
     app.kubernetes.io/name: keycloak-operator
-    app.kubernetes.io/version: 26.3.5
+    app.kubernetes.io/version: 26.4.7
   name: keycloakrealmimportcontroller-cluster-role
 rules:
   - apiGroups:
@@ -74,7 +76,7 @@ kind: ClusterRole
 metadata:
   labels:
     app.kubernetes.io/name: keycloak-operator
-    app.kubernetes.io/version: 26.3.5
+    app.kubernetes.io/version: 26.4.7
   name: keycloakcontroller-cluster-role
 rules:
   - apiGroups:
@@ -95,6 +97,30 @@ rules:
       - ""
     resources:
       - services
+    verbs:
+      - create
+      - delete
+      - get
+      - list
+      - patch
+      - update
+      - watch
+  - apiGroups:
+      - monitoring.coreos.com
+    resources:
+      - servicemonitors
+    verbs:
+      - create
+      - delete
+      - get
+      - list
+      - patch
+      - update
+      - watch
+  - apiGroups:
+      - networking.k8s.io
+    resources:
+      - networkpolicies
     verbs:
       - create
       - delete
@@ -137,18 +163,6 @@ rules:
       - get
       - list
       - watch
-  - apiGroups:
-      - networking.k8s.io
-    resources:
-      - networkpolicies
-    verbs:
-      - create
-      - delete
-      - get
-      - list
-      - patch
-      - update
-      - watch
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
@@ -167,6 +181,8 @@ subjects:
 apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
 metadata:
+  labels:
+    app.kubernetes.io/name: keycloak-operator
   name: keycloak-operator-role
 rules:
   - apiGroups:
@@ -209,6 +225,12 @@ rules:
     verbs:
       - list
   - apiGroups:
+      - ""
+    resources:
+      - pods/log
+    verbs:
+      - get
+  - apiGroups:
       - batch
     resources:
       - jobs
@@ -232,6 +254,17 @@ rules:
       - delete
       - patch
       - update
+  - apiGroups:
+      - monitoring.coreos.com
+    resources:
+      - servicemonitors
+    verbs:
+      - create
+      - delete
+      - get
+      - list
+      - update
+      - watch
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
@@ -252,7 +285,7 @@ kind: RoleBinding
 metadata:
   labels:
     app.kubernetes.io/name: keycloak-operator
-    app.kubernetes.io/version: 26.3.5
+    app.kubernetes.io/version: 26.4.7
   name: keycloakrealmimportcontroller-role-binding
 roleRef:
   kind: ClusterRole
@@ -267,7 +300,7 @@ kind: RoleBinding
 metadata:
   labels:
     app.kubernetes.io/name: keycloak-operator
-    app.kubernetes.io/version: 26.3.5
+    app.kubernetes.io/version: 26.4.7
   name: keycloakcontroller-role-binding
 roleRef:
   kind: ClusterRole
@@ -282,7 +315,7 @@ kind: RoleBinding
 metadata:
   labels:
     app.kubernetes.io/name: keycloak-operator
-    app.kubernetes.io/version: 26.3.5
+    app.kubernetes.io/version: 26.4.7
   name: keycloak-operator-view
 roleRef:
   kind: ClusterRole
@@ -296,12 +329,12 @@ apiVersion: v1
 kind: Service
 metadata:
   annotations:
-    app.quarkus.io/quarkus-version: 3.20.3
+    app.quarkus.io/quarkus-version: 3.27.1
     app.quarkus.io/vcs-uri: https://github.com/keycloak/keycloak.git
-    app.quarkus.io/build-timestamp: 2025-09-25 - 06:30:25 +0000
+    app.quarkus.io/build-timestamp: 2025-12-01 - 08:21:19 +0000
   labels:
     app.kubernetes.io/name: keycloak-operator
-    app.kubernetes.io/version: 26.3.5
+    app.kubernetes.io/version: 26.4.7
     app.kubernetes.io/managed-by: quarkus
   name: keycloak-operator
 spec:
@@ -318,12 +351,12 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   annotations:
-    app.quarkus.io/quarkus-version: 3.20.3
+    app.quarkus.io/quarkus-version: 3.27.1
     app.quarkus.io/vcs-uri: https://github.com/keycloak/keycloak.git
-    app.quarkus.io/build-timestamp: 2025-09-25 - 06:30:25 +0000
+    app.quarkus.io/build-timestamp: 2025-12-01 - 08:21:19 +0000
   labels:
     app.kubernetes.io/name: keycloak-operator
-    app.kubernetes.io/version: 26.3.5
+    app.kubernetes.io/version: 26.4.7
     app.kubernetes.io/managed-by: quarkus
   name: keycloak-operator
 spec:
@@ -334,13 +367,13 @@ spec:
   template:
     metadata:
       annotations:
-        app.quarkus.io/quarkus-version: 3.20.3
+        app.quarkus.io/quarkus-version: 3.27.1
         app.quarkus.io/vcs-uri: https://github.com/keycloak/keycloak.git
-        app.quarkus.io/build-timestamp: 2025-09-25 - 06:30:25 +0000
+        app.quarkus.io/build-timestamp: 2025-12-01 - 08:21:19 +0000
       labels:
         app.kubernetes.io/managed-by: quarkus
         app.kubernetes.io/name: keycloak-operator
-        app.kubernetes.io/version: 26.3.5
+        app.kubernetes.io/version: 26.4.7
     spec:
       containers:
         - env:
@@ -349,8 +382,12 @@ spec:
                 fieldRef:
                   fieldPath: metadata.namespace
             - name: RELATED_IMAGE_KEYCLOAK
-              value: quay.io/keycloak/keycloak:26.3.5
-          image: quay.io/keycloak/keycloak-operator:26.3.5
+              value: quay.io/keycloak/keycloak:26.4.7
+            - name: QUARKUS_OPERATOR_SDK_CONTROLLERS_KEYCLOAKREALMIMPORTCONTROLLER_NAMESPACES
+              value: JOSDK_WATCH_CURRENT
+            - name: QUARKUS_OPERATOR_SDK_CONTROLLERS_KEYCLOAKCONTROLLER_NAMESPACES
+              value: JOSDK_WATCH_CURRENT
+          image: quay.io/keycloak/keycloak-operator:26.4.7
           livenessProbe:
             failureThreshold: 3
             httpGet:

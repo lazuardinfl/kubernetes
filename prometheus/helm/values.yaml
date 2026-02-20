@@ -1,5 +1,8 @@
 namespaceOverride: prometheus
 
+alertmanager:
+  namespaceOverride: prometheus
+
 grafana:
   namespaceOverride: prometheus
   defaultDashboardsTimezone: browser
@@ -16,7 +19,7 @@ grafana:
       targetPort: https-proxy
   extraContainers: |
     - name: grafana-haproxy
-      image: haproxytech/haproxy-alpine:3.0.11
+      image: haproxytech/haproxy-alpine:3.2.12
       securityContext:
         runAsNonRoot: false
         runAsUser: 0
@@ -71,6 +74,8 @@ prometheus-node-exporter:
 
 prometheus:
   prometheusSpec:
+    scrapeInterval: 30s
+    evaluationInterval: 30s
     retention: 30d
     storageSpec:
       volumeClaimTemplate:
@@ -134,7 +139,6 @@ extraManifests:
             pidfile /var/run/haproxy.pid
             user haproxy
             group haproxy
-            tune.ssl.default-dh-param 2048
             ssl-default-bind-options prefer-client-ciphers no-sslv3 no-tls-tickets no-tlsv10
             ssl-default-bind-ciphersuites TLS_AES_128_GCM_SHA256:TLS_AES_256_GCM_SHA384:TLS_CHACHA20_POLY1305_SHA256
             ssl-default-bind-ciphers ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-GCM-SHA256:ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-GCM-SHA384:ECDHE-ECDSA-CHACHA20-POLY1305:ECDHE-RSA-CHACHA20-POLY1305:DHE-RSA-AES128-GCM-SHA256:DHE-RSA-AES256-GCM-SHA384:DHE-RSA-CHACHA20-POLY1305

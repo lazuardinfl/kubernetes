@@ -4,7 +4,7 @@
 
 ```
 helm repo add openebs https://openebs.github.io/openebs
-helm template openebs openebs/openebs -n openebs -f values.yaml --version 4.3.2 > temp.yaml
+helm template openebs openebs/openebs -n openebs -f values.yaml --version 4.4.0 > temp.yaml
 ```
 
 ## localpv

@@ -316,6 +316,7 @@ metadata:
   annotations:
     cert-manager.io/cluster-issuer: "issuer"
     haproxy.org/server-ssl: "true"
+    haproxy.org/check: "false"
 spec:
   ingressClassName: haproxy
   tls:

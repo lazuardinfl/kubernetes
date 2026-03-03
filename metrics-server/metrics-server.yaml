@@ -98,7 +98,8 @@ metadata:
   name: metrics-server
 spec:
   ports:
-  - name: https
+  - appProtocol: https
+    name: https
     port: 443
     protocol: TCP
     targetPort: https
@@ -125,13 +126,12 @@ spec:
     spec:
       containers:
       - name: metrics-server
-        image: registry.k8s.io/metrics-server/metrics-server:v0.7.2
+        image: registry.k8s.io/metrics-server/metrics-server:v0.8.1
         args:
         - --cert-dir=/tmp
         - --secure-port=10250
         - --kubelet-preferred-address-types=InternalIP,ExternalIP,Hostname
         - --kubelet-use-node-status-port
-        - --kubelet-insecure-tls
         - --metric-resolution=15s
         ports:
         - containerPort: 10250

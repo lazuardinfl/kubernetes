@@ -58,7 +58,7 @@ kind: Elasticsearch
 metadata:
   name: elasticsearch
 spec:
-  version: 9.3.0
+  version: 9.3.2
   auth:
     roles:
     - secretName: elastic-roles
@@ -96,7 +96,7 @@ kind: Kibana
 metadata:
   name: kibana
 spec:
-  version: 9.3.0
+  version: 9.3.2
   count: 1
   elasticsearchRef:
     name: elasticsearch
@@ -115,7 +115,7 @@ kind: Logstash
 metadata:
   name: logstash
 spec:
-  version: 9.3.0
+  version: 9.3.2
   count: 1
   elasticsearchRefs:
   - name: elasticsearch
@@ -194,7 +194,7 @@ metadata:
   name: filebeat
 spec:
   type: filebeat
-  version: 9.3.0
+  version: 9.3.2
   config:
     filebeat.autodiscover.providers:
     - type: kubernetes
@@ -257,7 +257,7 @@ metadata:
   name: packetbeat
 spec:
   type: packetbeat
-  version: 9.3.0
+  version: 9.3.2
   config:
     packetbeat.interfaces.device: any
     packetbeat.interfaces.type: af_packet

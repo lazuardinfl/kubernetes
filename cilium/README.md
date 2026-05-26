@@ -3,18 +3,39 @@
 pods ip -> `10.147.0.0/16` \
 services ip -> `10.97.0.0/16`
 
-to update or upgrade pod, delete first `kubectl delete -k`, then apply `kubectl apply -k`
-
 ## helm
 
+some parameters can be added via `helm --set key=value` or `values.yaml` file
+- `k8sServiceHost`, required, kubernetes API server, e.g. `kubernetes.domain.com`
+- `k8sServicePort`, required, kubernetes API server port, e.g. `6443`
+- `image.repository`, agent image repo, e.g. `registry.domain.com/cilium/cilium`
+- `operator.image.repository`, operator image repo, e.g. `registry.domain.com/cilium/operator`
+- `preflight.image.repository`, preflight image repo, e.g. `registry.domain.com/cilium/cilium`
+- `useDigest`, used within `image` key to use image digest, boolean `true` or `false`
+- `current-version`, current cilium version before upgrade process e.g. `1.9`
+- `values-file`, helm values file in YAML format, e.g. `values.yaml`
+
 ```
+# add repo
 helm repo add cilium https://helm.cilium.io
 
-export API_SERVER_IP=<kubernetes-api-server-ip>
-export API_SERVER_PORT=<kubernetes-api-server-port>
+# install with routing mode tunnel
+helm install cilium cilium/cilium -n kube-system -f values-tunnel.yaml --version 1.19.4
+# install with routing mode native
+helm install cilium cilium/cilium -n kube-system -f values-native.yaml --version 1.19.4
 
-helm template cilium cilium/cilium -n kube-system -f values.yaml --version 1.19.1 \
---set k8sServiceHost=${API_SERVER_IP} --set k8sServicePort=${API_SERVER_PORT} > temp.yaml
+# preflight before upgrade
+helm template cilium cilium/cilium -n kube-system -f values-preflight.yaml --version 1.19.4 > preflight.yaml
+# apply preflight manifest
+kubectl apply -f preflight.yaml
+# wait until all pods ready then delete
+kubectl delete -f preflight.yaml
+
+# upgrade
+helm upgrade cilium cilium/cilium -n kube-system -f <values-file> --set upgradeCompatibility=<current-version> --version 1.19.4
+
+# template
+helm template cilium cilium/cilium -n kube-system -f <values-file> --version 1.19.4 > temp.yaml
 ```
 
 ## bgp peering
@@ -23,30 +44,4 @@ to enable bgp peering, add this helm value:
 ```
 bgpControlPlane:
   enabled: true
-```
-
-then apply this config:
-```
-apiVersion: cilium.io/v2alpha1
-kind: CiliumBGPPeeringPolicy
-metadata:
-  name: bgp-peering-policy
-  namespace: kube-system
-spec:
-  nodeSelector:
-    matchLabels:
-      kubernetes.io/os: linux
-  virtualRouters: # []CiliumBGPVirtualRouter
-  - localASN: 65000
-    exportPodCIDR: true
-    neighbors: # []CiliumBGPNeighbor
-    - peerAddress: 192.168.0.2/32
-      peerASN: 65000
-      eBGPMultihopTTL: 10
-      connectRetryTimeSeconds: 120
-      holdTimeSeconds: 90
-      keepAliveTimeSeconds: 30
-      gracefulRestart:
-        enabled: true
-        restartTimeSeconds: 120
 ```

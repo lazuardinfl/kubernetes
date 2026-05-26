@@ -1,0 +1,29 @@
+operator:
+  replicas: 1
+kubeProxyReplacement: true
+routingMode: tunnel
+tunnelProtocol: geneve
+loadBalancer:
+  mode: dsr
+  algorithm: maglev
+  dsrDispatch: geneve
+  acceleration: best-effort
+bpf:
+  masquerade: true
+enableIPv4Masquerade: true
+socketLB:
+  hostNamespaceOnly: true
+bandwidthManager:
+  enabled: true
+hubble:
+  enabled: false
+envoy:
+  enabled: false
+tls:
+  secretsNamespace:
+    create: false
+    name: kube-system
+ipam:
+  mode: cluster-pool
+  operator:
+    clusterPoolIPv4PodCIDRList: 10.147.0.0/16

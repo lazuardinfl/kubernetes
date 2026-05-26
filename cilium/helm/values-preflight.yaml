@@ -1,0 +1,7 @@
+agent: false
+preflight:
+  enabled: true
+operator:
+  enabled: false
+envoy:
+  enabled: false

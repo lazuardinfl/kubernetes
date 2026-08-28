@@ -14,6 +14,7 @@ data:
         - 'blob:'
         - 'https://raw.githubusercontent.com/opencloud-eu/awesome-apps/'
         - 'https://update.opencloud.eu/'
+        - 'https://tile.openstreetmap.org/'
         - 'https://${IDP_DOMAIN}/'
       default-src:
         - '''none'''
@@ -26,6 +27,7 @@ data:
         - 'blob:'
         - 'https://embed.diagrams.net/'
         - 'https://docs.opencloud.eu'
+        - 'https://${IDP_DOMAIN}/'
       img-src:
         - '''self'''
         - 'data:'
@@ -46,6 +48,9 @@ data:
       style-src:
         - '''self'''
         - '''unsafe-inline'''
+      worker-src:
+        - "'self'"
+        - 'blob:'
   proxy.yaml: |-
     role_assignment:
       oidc_role_mapper:
@@ -165,7 +170,7 @@ spec:
         fsGroup: 1000
       initContainers:
         - name: init
-          image: opencloudeu/opencloud:4.0.1
+          image: opencloudeu/opencloud:7.2.4
           command: ["bash", "-c"]
           args:
             - update-ca-certificates;
@@ -181,7 +186,7 @@ spec:
               mountPath: /custom-ca
       containers:
         - name: opencloud
-          image: opencloudeu/opencloud:4.0.1
+          image: opencloudeu/opencloud:7.2.4
           command: ["/bin/sh"]
           args: ["-c", "opencloud init || true; opencloud server"]
           env:

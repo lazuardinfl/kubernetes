@@ -154,7 +154,6 @@ stringData:
       rm $TMP_EXISTING_ENVS_FILE
     }
 
-
     function env2ini::process_config_file() {
       local config_file="${1}"
       local section="$(basename "${config_file}")"
@@ -227,7 +226,7 @@ stringData:
       unset GITEA__SERVER__LFS_JWT_SECRET
     fi
 
-    environment-to-ini -o $GITEA_APP_INI
+    gitea config edit-ini --apply-env --config "$GITEA_APP_INI" --out "$GITEA_APP_INI"
   assertions: |
 ---
 apiVersion: v1
@@ -312,7 +311,7 @@ stringData:
           #   should add it to prevent requiring frequent admin password resets.
           local -a change_args
           change_args=(--username "${GITEA_ADMIN_USERNAME}" --password "${GITEA_ADMIN_PASSWORD}")
-          if gitea admin user change-password --help | grep -qF -- '--must-change-password'; then
+          if gitea admin user change-password --help | grep -F -- '--must-change-password' >/dev/null; then
             change_args+=(--must-change-password=false)
           fi
           gitea admin user change-password "${change_args[@]}"

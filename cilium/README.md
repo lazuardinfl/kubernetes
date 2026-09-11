@@ -20,22 +20,22 @@ some parameters can be added via `helm --set key=value` or `values.yaml` file
 helm repo add cilium https://helm.cilium.io
 
 # install with routing mode tunnel
-helm install cilium cilium/cilium -n kube-system -f values-tunnel.yaml --version 1.19.4
+helm install cilium cilium/cilium -n kube-system -f values-tunnel.yaml --version 1.20.1
 # install with routing mode native
-helm install cilium cilium/cilium -n kube-system -f values-native.yaml --version 1.19.4
+helm install cilium cilium/cilium -n kube-system -f values-native.yaml --version 1.20.1
 
 # preflight before upgrade
-helm template cilium cilium/cilium -n kube-system -f values-preflight.yaml --version 1.19.4 > preflight.yaml
+helm template cilium cilium/cilium -n kube-system -f values-preflight.yaml --version 1.20.1 > preflight.yaml
 # apply preflight manifest
 kubectl apply -f preflight.yaml
 # wait until all pods ready then delete
 kubectl delete -f preflight.yaml
 
 # upgrade
-helm upgrade cilium cilium/cilium -n kube-system -f <values-file> --set upgradeCompatibility=<current-version> --version 1.19.4
+helm upgrade cilium cilium/cilium -n kube-system -f <values-file> --set upgradeCompatibility=<current-version-ex-1.19> --version 1.20.1
 
 # template
-helm template cilium cilium/cilium -n kube-system -f <values-file> --version 1.19.4 > temp.yaml
+helm template cilium cilium/cilium -n kube-system -f <values-file> --version 1.20.1 > temp.yaml
 ```
 
 ## bgp peering

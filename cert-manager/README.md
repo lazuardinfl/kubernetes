@@ -14,8 +14,8 @@ using helm leader election can be changed to another namespace
 ```
 helm repo add jetstack https://charts.jetstack.io
 
-helm template cert-manager jetstack/cert-manager -n cert-manager --version v1.19.3 \
---set global.leaderElection.namespace=cert-manager > temp.yaml
+helm template cert-manager jetstack/cert-manager -n cert-manager --version v1.21.2 \
+--set crds.enabled=true --set global.leaderElection.namespace=cert-manager > temp.yaml
 ```
 
 ## let's encrypt behind proxy

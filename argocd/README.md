@@ -1,8 +1,13 @@
 # argocd
 
+## crd
+
+crd need to use server side apply because it exceeds size limit for client side apply,
+use `kubectl apply --server-side --force-conflicts -f crd/argocd-crd.yaml`
+
 ## vault plugin
 
-vault plugin container contains:
+included vault plugin container image contains:
 - Argo CD Vault Plugin v1.18.1
 - Kustomize v5.4.3
 

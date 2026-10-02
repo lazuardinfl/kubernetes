@@ -109,7 +109,7 @@ spec:
     spec:
       containers:
         - name: keycloak
-          image: quay.io/keycloak/keycloak:26.4.7
+          image: quay.io/keycloak/keycloak:26.7.5
           args:
             - -Djgroups.bind.address=$(POD_IP)
             - --verbose
@@ -141,11 +141,9 @@ spec:
               value: "true"
             - name: KC_CACHE
               value: ispn
-            - name: KC_TRUSTSTORE_PATHS
-              value: /var/run/secrets/kubernetes.io/serviceaccount/ca.crt
-            - name: KC_TRACING_SERVICE_NAME
+            - name: KC_TELEMETRY_SERVICE_NAME
               value: keycloak
-            - name: KC_TRACING_RESOURCE_ATTRIBUTES
+            - name: KC_TELEMETRY_RESOURCE_ATTRIBUTES
               value: k8s.namespace.name=$(POD_NAMESPACE)
             - name: KC_SPI_THEME_WELCOME_THEME
               value: welcome_redirect
@@ -218,6 +216,7 @@ spec:
         - name: keycloak-tls-certificates
           secret:
             defaultMode: 420
+            optional: false
             secretName: keycloak-tls
         - name: theme
           configMap:
